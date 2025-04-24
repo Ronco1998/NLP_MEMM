@@ -4,10 +4,25 @@ from tqdm import tqdm
 
 def memm_viterbi(sentence, pre_trained_weights, feature2id):
     """
-    Write your MEMM Viterbi implementation below
+    Write your MEMM Viterbi implementation below 
+    Recursive function (use dinamic programming / memoization - find out how to do it)
+
     You can implement Beam Search to improve runtime
     Implement q efficiently (refer to conditional probability definition in MEMM slides)
+    
+    :param sentence: the sentence to tag
+    :param pre_trained_weights: the weights vector
+    :feature2id: the feature2id object
+    :return: the predicted tags for the sentence 
+             the tags sequence which maximizes the conditional probability of the tags given the sentence
     """
+    B = 2  # Beam size
+    n = len(sentence)  # number of words in the sentence
+    m = len(feature2id.feature_statistics.tags)  # number of tags
+    # Initialize the Viterbi table and backpointer table
+    viterbi_table = [[0] * m for _ in range(n + 1)]
+    backpointer_table = [[0] * m for _ in range(n + 1)] 
+
     pass #TODO: implement Viterbi function
 
 

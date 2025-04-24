@@ -13,7 +13,8 @@ class FeatureStatistics:
         self.n_total_features = 0  # Total number of features accumulated
 
         # Init all features dictionaries
-        feature_dict_list = ["f100"]  # the feature classes used in the code # TODO: add features 101-107 to list
+        feature_dict_list = ["f100", "f101", "f102", "f103", "f104", "f105", "f106", "f107"]  # the feature classes used in the code 
+        #TODO: add number features and capital letter features
         self.feature_rep_dict = {fd: OrderedDict() for fd in feature_dict_list}
         '''
         A dictionary containing the counts of each data regarding a feature class. For example in f100, would contain
@@ -47,6 +48,9 @@ class FeatureStatistics:
                         self.feature_rep_dict["f100"][(cur_word, cur_tag)] = 1
                     else:
                         self.feature_rep_dict["f100"][(cur_word, cur_tag)] += 1
+
+                    #TODO: implement features that deal with numbers - written and digits
+                    #TODO: implement features that deal with capital letters
 
                 sentence = [("*", "*"), ("*", "*")]
                 for pair in split_words:
