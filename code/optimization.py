@@ -45,7 +45,7 @@ def get_optimal_vector(statistics: FeatureStatistics, feature2id: Feature2id, la
 
     """
     args = (statistics.histories, represent_input_with_features, feature2id, lam)
-    w_0 = np.random.normal(0, 1, feature2id.n_total_features)
+    w_0 = np.random.normal(0, 1, feature2id.n_total_features) #TODO: consider different initialization strategies
 
     optimal_params = fmin_l_bfgs_b(func=calc_objective_per_iter,
                                    x0=w_0,

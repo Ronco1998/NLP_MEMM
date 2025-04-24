@@ -13,7 +13,7 @@ class FeatureStatistics:
         self.n_total_features = 0  # Total number of features accumulated
 
         # Init all features dictionaries
-        feature_dict_list = ["f100"]  # the feature classes used in the code
+        feature_dict_list = ["f100"]  # the feature classes used in the code # TODO: add features 101-107 to list
         self.feature_rep_dict = {fd: OrderedDict() for fd in feature_dict_list}
         '''
         A dictionary containing the counts of each data regarding a feature class. For example in f100, would contain
@@ -42,7 +42,7 @@ class FeatureStatistics:
                     self.tags_counts[cur_tag] += 1
                     self.words_count[cur_word] += 1
 
-                    if (cur_word, cur_tag) not in self.feature_rep_dict["f100"]:
+                    if (cur_word, cur_tag) not in self.feature_rep_dict["f100"]: #TODO: implement feactures 101-107
                         self.feature_rep_dict["f100"][(cur_word, cur_tag)] = 1
                     else:
                         self.feature_rep_dict["f100"][(cur_word, cur_tag)] += 1
@@ -138,7 +138,7 @@ def represent_input_with_features(history: Tuple, dict_of_dicts: Dict[str, Dict[
     c_tag = history[1]
     features = []
 
-    # f100
+    # f100 #TODO: representation features 101-107
     if (c_word, c_tag) in dict_of_dicts["f100"]:
         features.append(dict_of_dicts["f100"][(c_word, c_tag)])
 
