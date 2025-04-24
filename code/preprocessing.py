@@ -38,10 +38,11 @@ class FeatureStatistics:
                 split_words = line.split(' ')
                 for word_idx in range(len(split_words)):
                     cur_word, cur_tag = split_words[word_idx].split('_')
-                    self.tags.add(cur_tag)
-                    self.tags_counts[cur_tag] += 1
-                    self.words_count[cur_word] += 1
+                    self.tags.add(cur_tag) # adding all different tags to the set
+                    self.tags_counts[cur_tag] += 1 # counting the number of times each tag appeared
+                    self.words_count[cur_word] += 1 # counting the number of times each word appeared
 
+                    ## for each feature class??
                     if (cur_word, cur_tag) not in self.feature_rep_dict["f100"]:
                         self.feature_rep_dict["f100"][(cur_word, cur_tag)] = 1
                     else:
@@ -71,7 +72,8 @@ class Feature2id:
 
         self.n_total_features = 0  # Total number of features accumulated
 
-        # Init all features dictionaries
+        # Init all features dictionaries 
+
         self.feature_to_idx = {
             "f100": OrderedDict(),
         }
@@ -105,6 +107,8 @@ class Feature2id:
         small_rows = []
         small_cols = []
         for small_r, hist in enumerate(self.feature_statistics.histories):
+            # small_r - which row (history) we are in the small matrix
+            # big_r - which row (history) we are in the big matrix
             for c in represent_input_with_features(hist, self.feature_to_idx):
                 small_rows.append(small_r)
                 small_cols.append(c)

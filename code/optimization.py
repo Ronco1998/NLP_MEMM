@@ -9,7 +9,7 @@ def calc_objective_per_iter(w_i, *args):
     Calculate max entropy likelihood for an iterative optimization method
     @param w_i: weights vector in iteration i
     @param args: arguments passed to this function, such as lambda hyper-parameter for regularization
-
+    
     @return: the Max Entropy likelihood (objective) and the objective gradient
     """
     all_histories_tuples, represent_input_with_features_function, feature2id, lam = args
