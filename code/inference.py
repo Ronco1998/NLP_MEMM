@@ -2,28 +2,39 @@ from preprocessing import read_test
 from tqdm import tqdm
 
 
-def memm_viterbi(sentence, pre_trained_weights, feature2id):
+def memm_viterbi_beam_search(sentence, pre_trained_weights, feature2id, beam_width=3):
     """
-    Write your MEMM Viterbi implementation below 
-    Recursive function (use dinamic programming / memoization - find out how to do it)
-
-    You can implement Beam Search to improve runtime
-    Implement q efficiently (refer to conditional probability definition in MEMM slides)
-    
-    :param sentence: the sentence to tag
+    MEMM Viterbi algorithm with beam search optimization.
+    :param sentence: list of words (with padding at start and end)
     :param pre_trained_weights: the weights vector
-    :feature2id: the feature2id object
-    :return: the predicted tags for the sentence 
-             the tags sequence which maximizes the conditional probability of the tags given the sentence
+    :param feature2id: the feature2id object
+    :param beam_width: the beam size (number of top paths to keep at each step)
+    :return: the predicted tags for the sentence
     """
-    B = 2  # Beam size
-    n = len(sentence)  # number of words in the sentence
-    m = len(feature2id.feature_statistics.tags)  # number of tags
-    # Initialize the Viterbi table and backpointer table
-    viterbi_table = [[0] * m for _ in range(n + 1)]
-    backpointer_table = [[0] * m for _ in range(n + 1)] 
+    tags = list(feature2id.feature_statistics.tags)
+    n = len(sentence)
+    beams = [ [(("*", "*"), 0.0, [])] ]  # Each entry: (prev_tags, score, tag_seq)
 
-    pass #TODO: implement Viterbi function
+    for i in range(2, n-1):  # skip padding
+        new_beam = []
+        for prev_tags, score, tag_seq in beams[-1]:
+            for t in tags:
+                history = (
+                    sentence[i], t,
+                    sentence[i-1], prev_tags[1],
+                    sentence[i-2], prev_tags[0],
+                    sentence[i+1]
+                )
+                features = feature2id.histories_features.get(history, [])
+                path_score = score + sum(pre_trained_weights[f] for f in features)
+                new_beam.append(((prev_tags[1], t), path_score, tag_seq + [t]))
+        # Keep only top beam_width paths
+        new_beam.sort(key=lambda x: x[1], reverse=True)
+        beams.append(new_beam[:beam_width])
+
+    # Get the best tag sequence from the last beam
+    best_seq = max(beams[-1], key=lambda x: x[1])[2]
+    return best_seq
 
 
 def tag_all_test(test_path, pre_trained_weights, feature2id, predictions_path):
@@ -34,7 +45,7 @@ def tag_all_test(test_path, pre_trained_weights, feature2id, predictions_path):
 
     for k, sen in tqdm(enumerate(test), total=len(test)):
         sentence = sen[0]
-        pred = memm_viterbi(sentence, pre_trained_weights, feature2id)[1:]
+        pred = memm_viterbi_beam_search(sentence, pre_trained_weights, feature2id)[1:]
         sentence = sentence[2:]
         for i in range(len(pred)):
             if i > 0:

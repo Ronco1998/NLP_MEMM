@@ -7,14 +7,15 @@ from typing import List, Dict, Tuple
 WORD = 0
 TAG = 1
 
+NUMBER_WORDS = {"zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "hundred", "thousand", "million", "billion"}
+
 
 class FeatureStatistics:
     def __init__(self):
         self.n_total_features = 0  # Total number of features accumulated
 
         # Init all features dictionaries
-        feature_dict_list = ["f100", "f101", "f102", "f103", "f104", "f105", "f106", "f107"]  # the feature classes used in the code 
-        #TODO: add number features and capital letter features
+        feature_dict_list = ["f100", "f101", "f102", "f103", "f104", "f105", "f106", "f107", "f_number", "f_Capital", "f_apostrophe"]  # the feature classes used in the code 
         self.feature_rep_dict = {fd: OrderedDict() for fd in feature_dict_list}
         '''
         A dictionary containing the counts of each data regarding a feature class. For example in f100, would contain
@@ -43,14 +44,7 @@ class FeatureStatistics:
                     self.tags_counts[cur_tag] += 1 # counting the number of times each tag appeared
                     self.words_count[cur_word] += 1 # counting the number of times each word appeared
 
-                    ## for each feature class??
-                    if (cur_word, cur_tag) not in self.feature_rep_dict["f100"]: #TODO: implement feactures 101-107
-                        self.feature_rep_dict["f100"][(cur_word, cur_tag)] = 1
-                    else:
-                        self.feature_rep_dict["f100"][(cur_word, cur_tag)] += 1
-
-                    #TODO: implement features that deal with numbers - written and digits
-                    #TODO: implement features that deal with capital letters
+                    self.check_all_features(self.feature_rep_dict, cur_word, cur_tag, word_idx, split_words)
 
                 sentence = [("*", "*"), ("*", "*")]
                 for pair in split_words:
@@ -63,6 +57,138 @@ class FeatureStatistics:
                         sentence[i - 2][1], sentence[i + 1][0])
 
                     self.histories.append(history)
+
+    def check_feature_f100(self, cur_word, cur_tag):
+        return True  # f100 applies to all word-tag pairs
+
+    def check_feature_f101(self, cur_word, cur_tag):
+        known_suffixes = {
+            'ing': 'VBG',
+            'ed': 'VBD',
+            'ly': 'RB',
+            's': 'NNS',
+            'es': 'VBZ',
+            'ion': 'NN'
+        }
+        for suffix, tag in known_suffixes.items():
+            if cur_word.endswith(suffix) and cur_tag == tag:
+                return True
+        return False
+
+    def check_feature_f102(self, cur_word, cur_tag):
+        known_prefixes = {
+            'un': 'JJ',
+            'pre': 'NN',
+            'pre': 'JJ',
+            're': 'VB',
+            'dis': 'VB',
+            'dis': 'JJ',
+            'in': 'JJ',
+            'mis': 'VB'
+        }
+        for prefix, tag in known_prefixes.items():
+            if cur_word.startswith(prefix) and cur_tag == tag:
+                return True
+        return False
+
+    def check_feature_f103(self, word_idx, split_words, cur_tag):
+        known_trigrams = {
+            ('DT', 'JJ', 'Vt'),
+            ('DT', 'JJ', 'NN'),
+            ('NN', 'VBZ', 'RB'),
+            ('PRP', 'VBP', 'VB')
+        }
+        if word_idx >= 2:
+            trigram = (
+                split_words[word_idx - 2].split('_')[1],
+                split_words[word_idx - 1].split('_')[1],
+                cur_tag
+            )
+            if trigram in known_trigrams:
+                return True
+        return False
+
+    def check_feature_f104(self, word_idx, split_words, cur_tag):
+        known_bigrams = {
+            ('JJ', 'NN'),
+            ('DT', 'JJ'),
+            ('NN', 'VBZ')
+        }
+        if word_idx >= 1:
+            bigram = (
+                split_words[word_idx - 1].split('_')[1],
+                cur_tag
+            )
+            if bigram in known_bigrams:
+                return True
+        return False
+
+    def check_feature_f105(self, cur_tag):
+        return True  # f105 applies to all tags
+
+    def check_feature_f106(self, word_idx, split_words, cur_tag):
+        known_prev_word_tags = {
+            ('the', 'NN'),
+            ('a', 'NN'),
+            ('to', 'VB')
+        }
+        if word_idx >= 1:
+            prev_word_tag = (
+                split_words[word_idx - 1].split('_')[0],
+                cur_tag
+            )
+            if prev_word_tag in known_prev_word_tags:
+                return True
+        return False
+
+    def check_feature_f107(self, word_idx, split_words, cur_tag):
+        known_next_word_tags = {
+            ('dog', 'NN'),
+            ('run', 'VB'),
+            ('quickly', 'RB')
+        }
+        if word_idx < len(split_words) - 1:
+            next_word_tag = (
+                split_words[word_idx + 1].split('_')[0],
+                cur_tag
+            )
+            if next_word_tag in known_next_word_tags:
+                return True
+        return False
+
+    def check_feature_f_number(self, cur_word, cur_tag, word_idx=None, split_words=None):
+        return any(char.isdigit() for char in cur_word) or cur_word.lower() in NUMBER_WORDS
+
+    def check_feature_f_Capital(self, cur_word, cur_tag):
+        # Fires if the word starts with a capital letter
+        return cur_word and cur_word[0].isupper()
+
+    def check_feature_f_apostrophe(self, cur_word, cur_tag):
+        return "'" in cur_word
+
+    def check_all_features(self, feature_rep_dict, cur_word, cur_tag, word_idx, split_words):
+        if self.check_feature_f100(cur_word, cur_tag):
+            feature_rep_dict["f100"][(cur_word, cur_tag)] = feature_rep_dict["f100"].get((cur_word, cur_tag), 0) + 1
+        if self.check_feature_f101(cur_word, cur_tag):
+            feature_rep_dict["f101"][(cur_word, cur_tag)] = feature_rep_dict["f101"].get((cur_word, cur_tag), 0) + 1
+        if self.check_feature_f102(cur_word, cur_tag):
+            feature_rep_dict["f102"][(cur_word, cur_tag)] = feature_rep_dict["f102"].get((cur_word, cur_tag), 0) + 1
+        if self.check_feature_f103(word_idx, split_words, cur_tag):
+            feature_rep_dict["f103"][(split_words[word_idx - 2].split('_')[1], split_words[word_idx - 1].split('_')[1], cur_tag)] = feature_rep_dict["f103"].get((split_words[word_idx - 2].split('_')[1], split_words[word_idx - 1].split('_')[1], cur_tag), 0) + 1
+        if self.check_feature_f104(word_idx, split_words, cur_tag):
+            feature_rep_dict["f104"][(split_words[word_idx - 1].split('_')[1], cur_tag)] = feature_rep_dict["f104"].get((split_words[word_idx - 1].split('_')[1], cur_tag), 0) + 1
+        if self.check_feature_f105(cur_tag):
+            feature_rep_dict["f105"][(cur_tag,)] = feature_rep_dict["f105"].get((cur_tag,), 0) + 1
+        if self.check_feature_f106(word_idx, split_words, cur_tag):
+            feature_rep_dict["f106"][(split_words[word_idx - 1].split('_')[0], cur_tag)] = feature_rep_dict["f106"].get((split_words[word_idx - 1].split('_')[0], cur_tag), 0) + 1
+        if self.check_feature_f107(word_idx, split_words, cur_tag):
+            feature_rep_dict["f107"][(split_words[word_idx + 1].split('_')[0], cur_tag)] = feature_rep_dict["f107"].get((split_words[word_idx + 1].split('_')[0], cur_tag), 0) + 1
+        if self.check_feature_f_number(cur_word, cur_tag, word_idx, split_words):
+            feature_rep_dict["f_number"][(cur_word, cur_tag)] = feature_rep_dict["f_number"].get((cur_word, cur_tag), 0) + 1
+        if self.check_feature_f_Capital(cur_word, cur_tag):
+            feature_rep_dict["f_Capital"][(cur_word, cur_tag)] = feature_rep_dict["f_Capital"].get((cur_word, cur_tag), 0) + 1
+        if self.check_feature_f_apostrophe(cur_word, cur_tag):
+            feature_rep_dict["f_apostrophe"][(cur_word, cur_tag)] = feature_rep_dict["f_apostrophe"].get((cur_word, cur_tag), 0) + 1
 
 
 class Feature2id:
@@ -80,6 +206,16 @@ class Feature2id:
 
         self.feature_to_idx = {
             "f100": OrderedDict(),
+            "f101": OrderedDict(),
+            "f102": OrderedDict(),
+            "f103": OrderedDict(),
+            "f104": OrderedDict(),
+            "f105": OrderedDict(),
+            "f106": OrderedDict(),
+            "f107": OrderedDict(),
+            "f_number": OrderedDict(),
+            "f_Capital": OrderedDict(),
+            "f_apostrophe": OrderedDict(),
         }
         self.represent_input_with_features = OrderedDict()
         self.histories_matrix = OrderedDict()
@@ -138,7 +274,7 @@ def represent_input_with_features(history: Tuple, dict_of_dicts: Dict[str, Dict[
         -> List[int]:
     """
         Extract feature vector in per a given history
-        @param history: tuple{c_word, c_tag, p_word, p_tag, pp_word, pp_tag, n_word}
+        @param history: tuple{current_word, current_tag, previous_word, previous_tag, pre_previous_word, pre_previous_tag, next_word}
         @param dict_of_dicts: a dictionary of each feature and the index it was given
         @return a list with all features that are relevant to the given history
     """
@@ -146,9 +282,56 @@ def represent_input_with_features(history: Tuple, dict_of_dicts: Dict[str, Dict[
     c_tag = history[1]
     features = []
 
-    # f100 #TODO: representation features 101-107
+    # f100: current word is X and current tag is T
     if (c_word, c_tag) in dict_of_dicts["f100"]:
         features.append(dict_of_dicts["f100"][(c_word, c_tag)])
+
+    # f101: prefix of current word (up to 4 characters) is X and current tag is T
+    for prefix_length in range(1, 5):
+        prefix = c_word[:prefix_length]
+        if (prefix, c_tag) in dict_of_dicts["f101"]:
+            features.append(dict_of_dicts["f101"][(prefix, c_tag)])
+
+    # f102: suffix of current word (up to 4 characters) is X and current tag is T
+    for suffix_length in range(1, 5):
+        suffix = c_word[-suffix_length:]
+        if (suffix, c_tag) in dict_of_dicts["f102"]:
+            features.append(dict_of_dicts["f102"][(suffix, c_tag)])
+
+    # f103: previous two tags are (X, Y) and current tag is T
+    if (history[5], history[3], c_tag) in dict_of_dicts["f103"]:
+        features.append(dict_of_dicts["f103"][(history[5], history[3], c_tag)])
+
+    # f104: previous tag is X and current tag is T
+    if (history[3], c_tag) in dict_of_dicts["f104"]:
+        features.append(dict_of_dicts["f104"][(history[3], c_tag)])
+
+    # f105: current tag is T
+    if (c_tag,) in dict_of_dicts["f105"]:
+        features.append(dict_of_dicts["f105"][(c_tag,)])
+
+    # f106: previous word is X and current tag is T
+    if (history[2], c_tag) in dict_of_dicts["f106"]:
+        features.append(dict_of_dicts["f106"][(history[2], c_tag)])
+
+    # f107: next word is X and current tag is T
+    if (history[6], c_tag) in dict_of_dicts["f107"]:
+        features.append(dict_of_dicts["f107"][(history[6], c_tag)])
+
+    # f_number: fires if the word contains a digit or is a number word and current tag is T
+    if any(char.isdigit() for char in c_word) or c_word.lower() in NUMBER_WORDS:
+        if (c_word, c_tag) in dict_of_dicts.get("f_number", {}):
+            features.append(dict_of_dicts["f_number"][(c_word, c_tag)])
+
+    # f_Capital: fires if the word starts with a capital letter and current tag is T
+    if c_word and c_word[0].isupper():
+        if (c_word, c_tag) in dict_of_dicts.get("f_Capital", {}):
+            features.append(dict_of_dicts["f_Capital"][(c_word, c_tag)])
+
+    # f_apostrophe: fires if the word contains an apostrophe and current tag is T
+    if "'" in c_word:
+        if (c_word, c_tag) in dict_of_dicts.get("f_apostrophe", {}):
+            features.append(dict_of_dicts["f_apostrophe"][(c_word, c_tag)])
 
     return features
 
