@@ -1,6 +1,7 @@
 from preprocessing import read_test
 from tqdm import tqdm
 
+# TODO: need to test by Accuracy for train1 and test1, for train2 there is no test set so we want to train by the Cross Validation
 
 def memm_viterbi_beam_search(sentence, pre_trained_weights, feature2id, beam_width=3):
     """
