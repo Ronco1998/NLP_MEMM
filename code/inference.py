@@ -1,4 +1,4 @@
-from preprocessing import read_test
+from preprocessing import read_test, represent_input_with_features
 from tqdm import tqdm
 
 # TODO: need to test by Accuracy for train1 and test1, for train2 there is no test set so we want to train by the Cross Validation
@@ -26,9 +26,11 @@ def memm_viterbi_beam_search(sentence, pre_trained_weights, feature2id, beam_wid
                     sentence[i-2], prev_tags[0],
                     sentence[i+1]
                 )
-                features = feature2id.histories_features.get(history, [])
+                features = represent_input_with_features(history, feature2id.feature_to_idx)
                 path_score = score + sum(pre_trained_weights[f] for f in features)
                 new_beam.append(((prev_tags[1], t), path_score, tag_seq + [t]))
+                # if i == 2:  # Only print for the first word in the sentence
+                    # print(f"Word: {sentence[i]}, Tag: {t}, Features: {features}")
         # Keep only top beam_width paths
         new_beam.sort(key=lambda x: x[1], reverse=True)
         beams.append(new_beam[:beam_width])

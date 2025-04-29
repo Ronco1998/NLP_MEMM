@@ -15,7 +15,7 @@ class FeatureStatistics:
         self.n_total_features = 0  # Total number of features accumulated
 
         # Init all features dictionaries
-        feature_dict_list = ["f100", "f101", "f102", "f103", "f104", "f105", "f106", "f107", "f_number", "f_Capital", "f_apostrophe"]  # the feature classes used in the code 
+        feature_dict_list = ["f100", "f101", "f102", "f103", "f104", "f105", "f106", "f107", "f_number", "f_Capital", "f_apostrophe", "f_plural"]  # added f_plural
         self.feature_rep_dict = {fd: OrderedDict() for fd in feature_dict_list}
         '''
         A dictionary containing the counts of each data regarding a feature class. For example in f100, would contain
@@ -42,7 +42,7 @@ class FeatureStatistics:
                     cur_word, cur_tag = split_words[word_idx].split('_')
                     self.tags.add(cur_tag) # adding all different tags to the set
                     self.tags_counts[cur_tag] += 1 # counting the number of times each tag appeared
-                    self.words_count[cur_word] += 1 # counting the number of times each word appeared
+                    self.words_count[cur_word] += 1 # counting the number of times each word appeared in the text
 
                     self.check_all_features(self.feature_rep_dict, cur_word, cur_tag, word_idx, split_words)
 
@@ -92,69 +92,23 @@ class FeatureStatistics:
         return False
 
     def check_feature_f103(self, word_idx, split_words, cur_tag):
-        known_trigrams = {
-            ('DT', 'JJ', 'Vt'),
-            ('DT', 'JJ', 'NN'),
-            ('NN', 'VBZ', 'RB'),
-            ('PRP', 'VBP', 'VB')
-        }
-        if word_idx >= 2:
-            trigram = (
-                split_words[word_idx - 2].split('_')[1],
-                split_words[word_idx - 1].split('_')[1],
-                cur_tag
-            )
-            if trigram in known_trigrams:
-                return True
-        return False
+        # Use all observed trigrams (prev2_tag, prev1_tag, cur_tag)
+        return word_idx >= 2
 
     def check_feature_f104(self, word_idx, split_words, cur_tag):
-        known_bigrams = {
-            ('JJ', 'NN'),
-            ('DT', 'JJ'),
-            ('NN', 'VBZ')
-        }
-        if word_idx >= 1:
-            bigram = (
-                split_words[word_idx - 1].split('_')[1],
-                cur_tag
-            )
-            if bigram in known_bigrams:
-                return True
-        return False
+        # Use all observed bigrams (prev1_tag, cur_tag)
+        return word_idx >= 1
 
     def check_feature_f105(self, cur_tag):
         return True  # f105 applies to all tags
 
     def check_feature_f106(self, word_idx, split_words, cur_tag):
-        known_prev_word_tags = {
-            ('the', 'NN'),
-            ('a', 'NN'),
-            ('to', 'VB')
-        }
-        if word_idx >= 1:
-            prev_word_tag = (
-                split_words[word_idx - 1].split('_')[0],
-                cur_tag
-            )
-            if prev_word_tag in known_prev_word_tags:
-                return True
-        return False
+        # Use all observed (prev_word, cur_tag)
+        return word_idx >= 1
 
     def check_feature_f107(self, word_idx, split_words, cur_tag):
-        known_next_word_tags = {
-            ('dog', 'NN'),
-            ('run', 'VB'),
-            ('quickly', 'RB')
-        }
-        if word_idx < len(split_words) - 1:
-            next_word_tag = (
-                split_words[word_idx + 1].split('_')[0],
-                cur_tag
-            )
-            if next_word_tag in known_next_word_tags:
-                return True
-        return False
+        # Use all observed (next_word, cur_tag)
+        return word_idx < len(split_words) - 1
 
     def check_feature_f_number(self, cur_word, cur_tag, word_idx=None, split_words=None):
         return any(char.isdigit() for char in cur_word) or cur_word.lower() in NUMBER_WORDS
@@ -165,6 +119,10 @@ class FeatureStatistics:
 
     def check_feature_f_apostrophe(self, cur_word, cur_tag):
         return "'" in cur_word
+
+    def check_feature_f_plural(self, cur_word, cur_tag):
+        # Fires if the word is likely plural (simple heuristic)
+        return cur_word.lower().endswith('s') and cur_tag in {"NNS", "NNPS"}
 
     def check_all_features(self, feature_rep_dict, cur_word, cur_tag, word_idx, split_words):
         if self.check_feature_f100(cur_word, cur_tag):
@@ -189,6 +147,8 @@ class FeatureStatistics:
             feature_rep_dict["f_Capital"][(cur_word, cur_tag)] = feature_rep_dict["f_Capital"].get((cur_word, cur_tag), 0) + 1
         if self.check_feature_f_apostrophe(cur_word, cur_tag):
             feature_rep_dict["f_apostrophe"][(cur_word, cur_tag)] = feature_rep_dict["f_apostrophe"].get((cur_word, cur_tag), 0) + 1
+        if self.check_feature_f_plural(cur_word, cur_tag):
+            feature_rep_dict["f_plural"][(cur_word, cur_tag)] = feature_rep_dict["f_plural"].get((cur_word, cur_tag), 0) + 1
 
 
 class Feature2id:
@@ -215,7 +175,8 @@ class Feature2id:
             "f107": OrderedDict(),
             "f_number": OrderedDict(),
             "f_Capital": OrderedDict(),
-            "f_apostrophe": OrderedDict(),
+            # "f_apostrophe": OrderedDict(),
+            "f_plural": OrderedDict(),
         }
         self.represent_input_with_features = OrderedDict()
         self.histories_matrix = OrderedDict()
@@ -332,6 +293,10 @@ def represent_input_with_features(history: Tuple, dict_of_dicts: Dict[str, Dict[
     if "'" in c_word:
         if (c_word, c_tag) in dict_of_dicts.get("f_apostrophe", {}):
             features.append(dict_of_dicts["f_apostrophe"][(c_word, c_tag)])
+
+    # f_plural: fires if the word is likely plural and current tag is NNS or NNPS
+    if (c_word, c_tag) in dict_of_dicts.get("f_plural", {}):
+        features.append(dict_of_dicts["f_plural"][(c_word, c_tag)])
 
     return features
 
