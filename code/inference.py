@@ -26,8 +26,11 @@ def memm_viterbi_beam_search(sentence, pre_trained_weights, feature2id, beam_wid
                     sentence[i-2], prev_tags[0],
                     sentence[i+1]
                 )
+                # (current_word, current_tag, previous_word, previous_tag, pre_previous_word, pre_previous_tag, next_word)
                 features = represent_input_with_features(history, feature2id.feature_to_idx)
+                #TODO: (up) change according to change in represent_input_with_features
                 path_score = score + sum(pre_trained_weights[f] for f in features)
+                #TODO: check if the calculation of the path score is a sum and not a product
                 new_beam.append(((prev_tags[1], t), path_score, tag_seq + [t]))
                 # if i == 2:  # Only print for the first word in the sentence
                     # print(f"Word: {sentence[i]}, Tag: {t}, Features: {features}")
