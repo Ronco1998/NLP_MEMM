@@ -68,7 +68,10 @@ class FeatureStatistics:
             'ly': 'RB',
             's': 'NNS',
             'es': 'VBZ',
-            'ion': 'NN'
+            'ion': 'NN',
+            'ions': 'NNS',
+            'able': 'JJ',
+            'ible': 'JJ'
         }
         for suffix, tag in known_suffixes.items():
             if cur_word.endswith(suffix) and cur_tag == tag:
@@ -91,17 +94,18 @@ class FeatureStatistics:
                 return True
         return False
 
-    def check_feature_f103(self, word_idx, split_words, cur_tag):
+    def check_feature_f103(self, word_idx, split_words, cur_tag): # the word had two previous words
         # Use all observed trigrams (prev2_tag, prev1_tag, cur_tag)
         return word_idx >= 2
 
-    def check_feature_f104(self, word_idx, split_words, cur_tag):
+    def check_feature_f104(self, word_idx, split_words, cur_tag): # the word had one previous word
         # Use all observed bigrams (prev1_tag, cur_tag)
         return word_idx >= 1
 
     def check_feature_f105(self, cur_tag):
         return True  # f105 applies to all tags
 
+    #TODO: f106\107 - why not check if previous/next word is "the"?
     def check_feature_f106(self, word_idx, split_words, cur_tag):
         # Use all observed (prev_word, cur_tag)
         return word_idx >= 1
@@ -125,13 +129,15 @@ class FeatureStatistics:
         return cur_word.lower().endswith('s') and cur_tag in {"NNS", "NNPS"}
 
     def check_all_features(self, feature_rep_dict, cur_word, cur_tag, word_idx, split_words):
+
+
         if self.check_feature_f100(cur_word, cur_tag):
             feature_rep_dict["f100"][(cur_word, cur_tag)] = feature_rep_dict["f100"].get((cur_word, cur_tag), 0) + 1
         if self.check_feature_f101(cur_word, cur_tag):
             feature_rep_dict["f101"][(cur_word, cur_tag)] = feature_rep_dict["f101"].get((cur_word, cur_tag), 0) + 1
         if self.check_feature_f102(cur_word, cur_tag):
             feature_rep_dict["f102"][(cur_word, cur_tag)] = feature_rep_dict["f102"].get((cur_word, cur_tag), 0) + 1
-        if self.check_feature_f103(word_idx, split_words, cur_tag):
+        if self.check_feature_f103(word_idx, split_words, cur_tag): 
             feature_rep_dict["f103"][(split_words[word_idx - 2].split('_')[1], split_words[word_idx - 1].split('_')[1], cur_tag)] = feature_rep_dict["f103"].get((split_words[word_idx - 2].split('_')[1], split_words[word_idx - 1].split('_')[1], cur_tag), 0) + 1
         if self.check_feature_f104(word_idx, split_words, cur_tag):
             feature_rep_dict["f104"][(split_words[word_idx - 1].split('_')[1], cur_tag)] = feature_rep_dict["f104"].get((split_words[word_idx - 1].split('_')[1], cur_tag), 0) + 1
@@ -299,7 +305,6 @@ def represent_input_with_features(history: Tuple, dict_of_dicts: Dict[str, Dict[
         features.append(dict_of_dicts["f_plural"][(c_word, c_tag)])
 
     return features
-
 
 def preprocess_train(train_path, threshold):
     # Statistics
