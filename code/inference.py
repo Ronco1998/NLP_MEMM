@@ -36,8 +36,6 @@ def memm_viterbi_beam_search(sentence, pre_trained_weights, feature2id, beam_wid
                 log_q = sum(pre_trained_weights[f] for f in features)
                 path_score = score + log_q  # log-space sum
                 # Debug: print log-scores for the first few tokens
-                if i < 5 and len(tag_seq) < 2:
-                    print(f"history: {history}, features: {features}, weights: {[pre_trained_weights[f] for f in features]}, log_q: {log_q}, path_score: {path_score}")
                 new_beam.append(((prev_tags[1], t), path_score, tag_seq + [t]))
         # Keep only top beam_width paths
         new_beam.sort(key=lambda x: x[1], reverse=True)
@@ -53,7 +51,6 @@ def tag_all_test(test_path, pre_trained_weights, feature2id, predictions_path):
     test = read_test(test_path, tagged=tagged)
 
     output_file = open(predictions_path, "a+")
-    print("[DEBUG] Tag set:", feature2id.feature_statistics.tags)
 
     for k, sen in tqdm(enumerate(test), total=len(test)):
         words = sen[0][2:-1]  # Remove the two paddings at the start and the one at the end
