@@ -105,7 +105,6 @@ class FeatureStatistics:
     def check_feature_f105(self, cur_tag):
         return True  # f105 applies to all tags
 
-    #TODO: f106\107 - why not check if previous/next word is "the"?
     def check_feature_f106(self, word_idx, split_words, cur_tag):
         # Use all observed (prev_word, cur_tag)
         return word_idx >= 1
@@ -204,6 +203,12 @@ class Feature2id:
                     self.n_total_features += 1
         print(f"you have {self.n_total_features} features!")
 
+        # After assigning indices, precompute and cache features for all histories
+        for hist in self.feature_statistics.histories:
+            features = represent_input_with_features(hist, self.feature_to_idx)
+            self.represent_input_with_features[hist] = features
+            self.histories_matrix[hist] = features  # Cache in histories_matrix as well
+
     def calc_represent_input_with_features(self) -> None:
         """
         initializes the matrices used in the optimization process - self.big_matrix and self.small_matrix
@@ -237,14 +242,17 @@ class Feature2id:
                 self.feature_statistics.histories), self.n_total_features), dtype=bool)
 
 
-def represent_input_with_features(history: Tuple, dict_of_dicts: Dict[str, Dict[Tuple[str, str], int]])\
-        -> List[int]:
+def represent_input_with_features(history: Tuple, dict_of_dicts: Dict[str, Dict[Tuple[str, str], int]]) -> List[int]:
     """
-        Extract feature vector in per a given history
-        @param history: tuple{current_word, current_tag, previous_word, previous_tag, pre_previous_word, pre_previous_tag, next_word}
-        @param dict_of_dicts: a dictionary of each feature and the index it was given
-        @return a list with all features that are relevant to the given history
+    Extract feature vector for a given history using precomputed features if available.
+    @param history: tuple{current_word, current_tag, previous_word, previous_tag, pre_previous_word, pre_previous_tag, next_word}
+    @param dict_of_dicts: a dictionary of each feature and the index it was given
+    @return a list with all features that are relevant to the given history
     """
+    # Use precomputed features if available
+    if hasattr(dict_of_dicts, 'histories_features') and history in dict_of_dicts.histories_features:
+        return dict_of_dicts.histories_features[history]
+
     c_word = history[0]
     c_tag = history[1]
     features = []
