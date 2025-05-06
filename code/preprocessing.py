@@ -129,7 +129,6 @@ class FeatureStatistics:
 
     def check_all_features(self, feature_rep_dict, cur_word, cur_tag, word_idx, split_words):
 
-
         if self.check_feature_f100(cur_word, cur_tag):
             feature_rep_dict["f100"][(cur_word, cur_tag)] = feature_rep_dict["f100"].get((cur_word, cur_tag), 0) + 1
         if self.check_feature_f101(cur_word, cur_tag):
@@ -194,6 +193,8 @@ class Feature2id:
         Assigns each feature that appeared enough time in the train files an idx.
         Saves those indices to self.feature_to_idx
         """
+        #TODO: change here how we assign features to the model
+        # play with thresholds for each feature for each model
         for feat_class in self.feature_statistics.feature_rep_dict:
             if feat_class not in self.feature_to_idx:
                 continue
