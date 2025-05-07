@@ -34,7 +34,6 @@ def calc_objective_per_iter(w_i, *args):
 
     return (-1) * likelihood, (-1) * grad
 
-
 def get_optimal_vector(statistics: FeatureStatistics, feature2id: Feature2id, lam: float, weights_path: str) -> None:
     """
     The function computes and saves to a file the optimal weights
