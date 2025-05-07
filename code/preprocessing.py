@@ -7,15 +7,26 @@ from typing import List, Dict, Tuple
 WORD = 0
 TAG = 1
 
-NUMBER_WORDS = {"zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "hundred", "thousand", "million", "billion"}
-
+NUMBER_WORDS = {"zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
+                 "hundred", "thousand", "million", "billion"}
+# added known prefixes and suffixes for biology - can add\edit acording to outside knowledge
+prefixes_bio = {"ana", "angio", "arthr", "arthro", "auto", "blast", "cephal", "cephalo", "chrom", "chromo",
+                "cyto", "dactyl", "diplo", "ect", "ecto", "end", "endo", "epi", "erythr", "erythro",
+                "ex", "exo", "eu", "glyco", "gluco", "haplo", "hem", "hemo", "hemato", "heter", "hetero",
+                "karyo", "caryo", "meso", "my", "myo", "peri", "phag", "phago", "poly", "proto", "staphyl",
+                "staphylo", "tel", "telo", "zo", "zoo"}
+suffixes_bio = {"ase", "cyte" "derm", "dermis", "ectomy", "stomy", "emia", "aemia", "genic", "itis", "kinesis",
+                "kinesia", "lysis", "oma", "osis", "otic", "otomy", "tomy", "penia", "phage", "phagia",
+                "phile", "philic", "plasm", "plasmo", "scope", "stasis", "troph", "trophy"}
 
 class FeatureStatistics:
     def __init__(self):
         self.n_total_features = 0  # Total number of features accumulated
 
         # Init all features dictionaries
-        feature_dict_list = ["f100", "f101", "f102", "f103", "f104", "f105", "f106", "f107", "f_number", "f_Capital", "f_apostrophe", "f_plural"]  # added f_plural
+        feature_dict_list = ["f100", "f101", "f102", "f103", "f104", "f105", "f106", "f107",
+                              "f_number", "f_Capital", "f_apostrophe", "f_plural", "f_bio"]  # added f_plural + f_bio
+        #TODO: why f_apostrophe?
         self.feature_rep_dict = {fd: OrderedDict() for fd in feature_dict_list}
         '''
         A dictionary containing the counts of each data regarding a feature class. For example in f100, would contain
@@ -71,7 +82,9 @@ class FeatureStatistics:
             'ion': 'NN',
             'ions': 'NNS',
             'able': 'JJ',
-            'ible': 'JJ'
+            'ible': 'JJ', 
+            'ic': 'JJ', 
+            'ical': 'JJ'
         }
         for suffix, tag in known_suffixes.items():
             if cur_word.endswith(suffix) and cur_tag == tag:
@@ -126,6 +139,16 @@ class FeatureStatistics:
     def check_feature_f_plural(self, cur_word, cur_tag):
         # Fires if the word is likely plural (simple heuristic)
         return cur_word.lower().endswith('s') and cur_tag in {"NNS", "NNPS"}
+    
+    def check_feature_f_bio(self, cur_word, cur_tag):
+        # Check if the word starts with a known prefix or ends with a known suffix
+        for prefix in prefixes_bio:
+            if cur_word.startswith(prefix) and cur_tag in {"NN", "NNS"}:
+                return True
+        for suffix in suffixes_bio:
+            if cur_word.endswith(suffix) and cur_tag in {"NN", "NNS"}:
+                return True
+        return False
 
     def check_all_features(self, feature_rep_dict, cur_word, cur_tag, word_idx, split_words):
 
@@ -153,6 +176,8 @@ class FeatureStatistics:
             feature_rep_dict["f_apostrophe"][(cur_word, cur_tag)] = feature_rep_dict["f_apostrophe"].get((cur_word, cur_tag), 0) + 1
         if self.check_feature_f_plural(cur_word, cur_tag):
             feature_rep_dict["f_plural"][(cur_word, cur_tag)] = feature_rep_dict["f_plural"].get((cur_word, cur_tag), 0) + 1
+        if self.check_feature_f_bio(cur_word, cur_tag):
+            feature_rep_dict["f_bio"][(cur_word, cur_tag)] = feature_rep_dict["f_bio"].get((cur_word, cur_tag), 0) + 1
 
 
 class Feature2id:
@@ -181,6 +206,7 @@ class Feature2id:
             "f_Capital": OrderedDict(),
             # "f_apostrophe": OrderedDict(),
             "f_plural": OrderedDict(),
+            "f_bio": OrderedDict()
         }
         self.represent_input_with_features = OrderedDict()
         self.histories_matrix = OrderedDict()
@@ -194,7 +220,7 @@ class Feature2id:
         Saves those indices to self.feature_to_idx
         """
         #TODO: change here how we assign features to the model
-        # play with thresholds for each feature for each model
+        # use the threshholds for each model
         for feat_class in self.feature_statistics.feature_rep_dict:
             if feat_class not in self.feature_to_idx:
                 continue
@@ -312,6 +338,11 @@ def represent_input_with_features(history: Tuple, dict_of_dicts: Dict[str, Dict[
     # f_plural: fires if the word is likely plural and current tag is NNS or NNPS
     if (c_word, c_tag) in dict_of_dicts.get("f_plural", {}):
         features.append(dict_of_dicts["f_plural"][(c_word, c_tag)])
+
+    # f_bio: fires if the word starts with a known prefix or ends with a known suffix and current tag is NNS or NNPS
+    if (c_word, c_tag) in dict_of_dicts.get("f_bio", {}):
+        features.append(dict_of_dicts["f_bio"][(c_word, c_tag)])
+    #TODO: check if this does what its supposed to
 
     return features
 
