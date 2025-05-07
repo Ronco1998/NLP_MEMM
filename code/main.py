@@ -76,14 +76,14 @@ def perform_5_fold_cross_validation(train2_path, weights2_path, threshold, lam):
 
 def main():
     # threshold = 8  # or higher, experiment to get under 10,000 features
-    threshold_m1 = {"f100": 12, "f101": 8, "f102": 8, "f103": 8, "f104": 10, "f105": 7, "f106": 8, "f107": 8,
-                    "f_number": 6, "f_Capital": 4, "f_apostrophe": np.inf, "f_plural": 6, "f_bio_pre_suf": np.inf, "f_hyfen": 8,
-                    "f_econ_terms": 8, "f_bio_terms": np.inf, "f_CapCap": 7, "f_CapCapCap": 7, "f_allCap": 7,
-                    "f_dot": 8}
-    threshold_m2 = {"f100": 7, "f101": 8, "f102": 9, "f103": 6, "f104": 10, "f105": 7, "f106": 8, "f107": np.inf,
-                    "f_number": 6, "f_Capital": 4, "f_apostrophe": np.inf, "f_plural": 10, "f_bio_pre_suf": 8, "f_hyfen": 7,
-                    "f_econ_terms": np.inf, "f_bio_terms": 8, "f_CapCap": np.inf, "f_CapCapCap": np.inf, "f_allCap": 5,
-                    "f_dot": 7}
+    threshold_m1 = {"f100": 9, "f101": 10, "f102": 11, "f103": 8, "f104": 10, "f105": 10, "f106": 8, "f107": 8,
+                    "f_number": 5, "f_Capital": 5, "f_apostrophe": np.inf, "f_plural": 6, "f_bio_pre_suf": np.inf, "f_hyfen": 8,
+                    "f_econ_terms": 0, "f_bio_terms": np.inf, "f_CapCap": 6, "f_CapCapCap": 6, "f_allCap": 5,
+                    "f_dot": 6}
+    threshold_m2 = {"f100": 7, "f101": 6, "f102": 6, "f103": 8, "f104": 9, "f105": 10, "f106": 8, "f107": 8,
+                    "f_number": 8, "f_Capital": 7, "f_apostrophe": np.inf, "f_plural": 8, "f_bio_pre_suf": 0, "f_hyfen": 8,
+                    "f_econ_terms": np.inf, "f_bio_terms": 0, "f_CapCap": 8, "f_CapCapCap": 8, "f_allCap": 6,
+                    "f_dot": 6}
 
     lam = 0.1
 

@@ -34,6 +34,7 @@ def memm_viterbi_beam_search(sentence, pre_trained_weights, feature2id, beam_wid
                     features = represent_input_with_features(history, feature2id.feature_to_idx)
                 # Use log-space for scores
                 log_q = sum(pre_trained_weights[f] for f in features)
+                #TODO: maybe add a small score separated if we get too low on certain features
                 path_score = score + log_q  # log-space sum
                 # Debug: print log-scores for the first few tokens
                 new_beam.append(((prev_tags[1], t), path_score, tag_seq + [t]))

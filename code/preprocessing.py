@@ -39,17 +39,6 @@ class FeatureStatistics:
                              "f_number", "f_Capital", "f_apostrophe", "f_plural", "f_bio_pre_suf",
                              "f_hyfen", "f_econ_terms", "f_bio_terms", "f_CapCap", "f_CapCapCap",
                              "f_allCap", "f_dot"]  # added f_plural + f_bio_pre_suf
-        
-        #TODO: add feature that checks if the previous word started with a capital letter and also the current word - NNP, NNPS
-        # f_CapCap, f_CapCapCap
-
-        #TODO: add feature that checks if all letters in word are capital letters - NNP, NNPS
-        # f_allCap
-
-        #TODO: add feature that checks if a word finished with a period - NNP, NNPS, FW
-        # f_dot
-
-        #TODO: add feature for known terms in economics and biology - NN, NNS, 
 
         #TODO: add feature about foreign words somehow
 
@@ -96,9 +85,11 @@ class FeatureStatistics:
 
                     self.histories.append(history)
 
+    # all words and their seen tags
     def check_feature_f100(self, cur_word, cur_tag):
         return True  # f100 applies to all word-tag pairs
 
+    # if the word is part of a known structure - suffixes
     def check_feature_f101(self, cur_word, cur_tag):
         known_suffixes = {
             'ing': 'VBG',
@@ -118,6 +109,7 @@ class FeatureStatistics:
                 return True
         return False
 
+    # if the word is part of a known structure - prefixes
     def check_feature_f102(self, cur_word, cur_tag):
         known_prefixes = {
             'un': 'JJ',
@@ -134,52 +126,65 @@ class FeatureStatistics:
                 return True
         return False
 
+    # the current word has two previous words - tags insteresting
     def check_feature_f103(self, word_idx, split_words, cur_tag): # the word had two previous words
         # Use all observed trigrams (prev2_tag, prev1_tag, cur_tag)
         return word_idx >= 2
 
+    # the current word has one previous word - tags interesting
     def check_feature_f104(self, word_idx, split_words, cur_tag): # the word had one previous word
         # Use all observed bigrams (prev1_tag, cur_tag)
         return word_idx >= 1
 
+    # the current word has a tag - applies to all words!
     def check_feature_f105(self, cur_tag):
         return True  # f105 applies to all tags
 
+    # the current word has one previous word - word interesting
     def check_feature_f106(self, word_idx, split_words, cur_tag):
         # Use all observed (prev_word, cur_tag)
         return word_idx >= 1
 
+    # the current word has one next word - word interesting
     def check_feature_f107(self, word_idx, split_words, cur_tag):
         # Use all observed (next_word, cur_tag)
         return word_idx < len(split_words) - 1
 
+    # the current word is a number or a known number word
     def check_feature_f_number(self, cur_word, cur_tag, word_idx=None, split_words=None):
         return any(char.isdigit() for char in cur_word) or cur_word.lower() in NUMBER_WORDS
 
+    # the current word starts with a capital letter and is a proper noun
+    # TODO: do we need the proper noun?
     def check_feature_f_Capital(self, cur_word, cur_tag):
         # Fires if the word starts with a capital letter
         return cur_word[0].isupper() and cur_tag in {"NNP", "NNPS"}
     
     #TODO: shound the current word also start with a capital letter?
-    def check_feature_f_CapCap(self, word_idx, split_words, cur_tag):
-        # Fires if the word starts with a capital letter and the previous word is also capitalized
-        return word_idx >= 1 and split_words[word_idx - 1][0].isupper() and cur_tag in {"NNP", "NNPS"}
-    
-    def check_feature_f_CapCapCap(self, word_idx, split_words, cur_tag):
-        # Fires if the word starts with a capital letter and the previous two words are also capitalized
-        return word_idx >= 2 and split_words[word_idx - 1][0].isupper() and split_words[word_idx - 2][0].isupper() and cur_tag in {"NNP", "NNPS"}
+    # and should it be curr_tag in {"NNP", "NNPS"}?
 
-    #TODO: use this or delete it?
+    # the current word is a capitalized word and the previous word is also capitalized
+    def check_feature_f_CapCap(self, word_idx, split_words, cur_tag):
+        return word_idx >= 1 and split_words[word_idx - 1][0].isupper() and split_words[word_idx][0].isupper() # and cur_tag in {"NNP", "NNPS"}
+    
+    # the current word is a capitalized word and the previous two words are also capitalized
+    def check_feature_f_CapCapCap(self, word_idx, split_words, cur_tag):
+        return word_idx >= 2 and split_words[word_idx - 1][0].isupper() and split_words[word_idx - 2][0].isupper() and split_words[word_idx][0].isupper() # and cur_tag in {"NNP", "NNPS"}
+
+    # the current word has an apostrophe
     def check_feature_f_apostrophe(self, cur_word, cur_tag):
         return "'" in cur_word
     
+    # the current word has a hyphen (compost words moslty) and is a noun or adjective
     def check_feature_f_hyfen(self, cur_word, cur_tag):
         return ("-" in cur_word) and cur_tag in {"NN", "NNP", "JJ", "NNS"}
     
+    # the current word finishes with an 's', and is a noun or proper noun (plura!)
     def check_feature_f_plural(self, cur_word, cur_tag):
         # Fires if the word is likely plural (simple heuristic)
         return cur_word.lower().endswith('s') and cur_tag in {"NNS", "NNPS"}
     
+    # the current word has a prefix or suffix that is known in biology and is a noun
     def check_feature_f_bio(self, cur_word, cur_tag):
         # Check if the word starts with a known prefix or ends with a known suffix
         for prefix in prefixes_bio:
@@ -190,21 +195,24 @@ class FeatureStatistics:
                 return True
         return False
     
+    # the current word is a known economics term
     def check_feature_f_econ_terms(self, cur_word, cur_tag):
-        # Check if the word is a known economics term
-        return cur_word.lower() in economics_terms and cur_tag in {"NN", "NNS"}
+        in_somehow = (term in cur_word.lower() for term in economics_terms)
+        return any(in_somehow) # and cur_tag in {"NN", "NNS"}
     
+    # the current word is a known biology term
     def check_feature_f_bio_terms(self, cur_word, cur_tag):
-        # Check if the word is a known biology term
-        return cur_word.lower() in biology_terms and cur_tag in {"NN", "NNS"}
+        in_somehow = (term in cur_word.lower() for term in biology_terms)
+        return any(in_somehow) # and cur_tag in {"NN", "NNS"}
 
+    # the current word is all capital letters
     def check_feature_f_allCap(self, cur_word, cur_tag):
-        # Check if the word is all capital letters
-        return cur_word.isupper() and cur_tag in {"NNP", "NNPS"}
+        return cur_word.isupper() # and cur_tag in {"NN", "NNS", "NNP", "NNPS"}
 
+    # the current word ends with a period
     def check_feature_f_dot(self, cur_word, cur_tag):
         # Check if the word ends with a period
-        return (cur_word.endswith('.') or '.' in cur_word) and cur_tag in {"NNP", "NNPS", "FW"}
+        return cur_word.endswith('.') # and cur_tag in {"NNP", "NNPS", "FW"}
 
     def check_all_features(self, feature_rep_dict, cur_word, cur_tag, word_idx, split_words):
 
