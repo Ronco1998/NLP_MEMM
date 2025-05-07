@@ -76,16 +76,17 @@ def perform_5_fold_cross_validation(train2_path, weights2_path, threshold, lam):
 
 def main():
     # threshold = 8  # or higher, experiment to get under 10,000 features
-    threshold_m1 = {"f100": 9, "f101": 10, "f102": 11, "f103": 8, "f104": 10, "f105": 10, "f106": 8, "f107": 8,
-                    "f_number": 5, "f_Capital": 5, "f_apostrophe": np.inf, "f_plural": 6, "f_bio_pre_suf": np.inf, "f_hyfen": 8,
-                    "f_econ_terms": 0, "f_bio_terms": np.inf, "f_CapCap": 6, "f_CapCapCap": 6, "f_allCap": 5,
-                    "f_dot": 6}
-    threshold_m2 = {"f100": 7, "f101": 6, "f102": 6, "f103": 8, "f104": 9, "f105": 10, "f106": 8, "f107": 8,
-                    "f_number": 8, "f_Capital": 7, "f_apostrophe": np.inf, "f_plural": 8, "f_bio_pre_suf": 0, "f_hyfen": 8,
-                    "f_econ_terms": np.inf, "f_bio_terms": 0, "f_CapCap": 8, "f_CapCapCap": 8, "f_allCap": 6,
-                    "f_dot": 6}
+    threshold_m1 = {"f100": 7, "f101": 8, "f102": 9, "f103": 6, "f104": 8, "f105": 8, "f106": 6, "f107": 6,
+                    "f_number": 3, "f_Capital": 3, "f_apostrophe": np.inf, "f_plural": 3, "f_bio_pre_suf": np.inf, "f_hyfen": 6,
+                    "f_econ_terms": 0, "f_bio_terms": np.inf, "f_CapCap": 4, "f_CapCapCap": 4, "f_allCap": 3,
+                    "f_dot": 3}
+    threshold_m2 = {"f100": 3, "f101": 3, "f102": 3, "f103": 4, "f104": 4, "f105": 5, "f106": 4, "f107": 4,
+                    "f_number": 4, "f_Capital": 3, "f_apostrophe": np.inf, "f_plural": 4, "f_bio_pre_suf": 0, "f_hyfen": 4,
+                    "f_econ_terms": np.inf, "f_bio_terms": 0, "f_CapCap": 4, "f_CapCapCap": 4, "f_allCap": 3,
+                    "f_dot": 3}
 
-    lam = 0.1
+    lam1 = 0.1
+    lam2 = 0.01
 
     # model 1
     train1_path = "data/train1.wtag"
@@ -96,7 +97,7 @@ def main():
     predictions1_path = 'predictions1.wtag'
     
     statistics, feature2id1 = preprocess_train(train1_path, threshold_m1)
-    get_optimal_vector(statistics = statistics, feature2id = feature2id1, weights_path = weights1_path, lam=lam)
+    get_optimal_vector(statistics = statistics, feature2id = feature2id1, weights_path = weights1_path, lam=lam1)
 
     with open(weights1_path, 'rb') as f:
         optimal_params, feature2id1 = pickle.load(f)
@@ -132,7 +133,7 @@ def main():
     shutil.copy(train2_path, test_on_train_path)
 
     weights2_path = 'weights2.pkl'
-    _, feature2id2 = perform_5_fold_cross_validation(train2_path, weights2_path, threshold_m2, lam)
+    _, feature2id2 = perform_5_fold_cross_validation(train2_path, weights2_path, threshold_m2, lam2)
 
     # After cross-validation, use the averaged weights for tagging
     predictions2_on_train_path = 'predictions2_on_train.wtag'
