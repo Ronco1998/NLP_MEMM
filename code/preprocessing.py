@@ -182,7 +182,7 @@ class FeatureStatistics:
     # the current word finishes with an 's', and is a noun or proper noun (plura!)
     def check_feature_f_plural(self, cur_word, cur_tag):
         # Fires if the word is likely plural (simple heuristic)
-        return cur_word.lower().endswith('s') and cur_tag in {"NNS", "NNPS"}
+        return cur_word.lower().endswith('s') # and cur_tag in {"NNS", "NNPS"}
     
     # the current word has a prefix or suffix that is known in biology and is a noun
     def check_feature_f_bio(self, cur_word, cur_tag):
