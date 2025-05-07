@@ -188,6 +188,7 @@ class Feature2id:
         """
         self.feature_statistics = feature_statistics  # statistics class, for each feature gives empirical counts
         self.threshold = threshold  # feature count threshold - empirical count must be higher than this
+        # when self.threshold is a dicionary, each feature family has its own threshold
 
         self.n_total_features = 0  # Total number of features accumulated
 
@@ -219,13 +220,12 @@ class Feature2id:
         Assigns each feature that appeared enough time in the train files an idx.
         Saves those indices to self.feature_to_idx
         """
-        #TODO: change here how we assign features to the model
         # use the threshholds for each model
         for feat_class in self.feature_statistics.feature_rep_dict:
             if feat_class not in self.feature_to_idx:
                 continue
             for feat, count in self.feature_statistics.feature_rep_dict[feat_class].items():
-                if count >= self.threshold:
+                if count >= self.threshold[feat_class]:
                     self.feature_to_idx[feat_class][feat] = self.n_total_features
                     self.n_total_features += 1
         print(f"you have {self.n_total_features} features!")
