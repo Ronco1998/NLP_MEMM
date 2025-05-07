@@ -4,7 +4,7 @@ import numpy as np
 
 # done... in main
 
-def memm_viterbi_beam_search(sentence, pre_trained_weights, feature2id, beam_width=3):
+def memm_viterbi_beam_search(sentence, pre_trained_weights, feature2id, beam_width=4):
     """
     MEMM Viterbi algorithm with beam search optimization using precomputed features.
     :param sentence: list of words (with padding at start and end)

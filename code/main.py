@@ -23,7 +23,7 @@ def perform_5_fold_cross_validation(train2_path, weights2_path, threshold, lam):
     features2id = []
 
     # Split data into 5 folds
-    kf = KFold(n_splits=6, shuffle=True, random_state=42)
+    kf = KFold(n_splits=5, shuffle=True, random_state=42)
     fold_weights = []
 
     for fold_idx, (train_idx, test_idx) in enumerate(kf.split(data)):
@@ -77,47 +77,51 @@ def perform_5_fold_cross_validation(train2_path, weights2_path, threshold, lam):
 def main():
     # threshold = 8  # or higher, experiment to get under 10,000 features
     threshold_m1 = {"f100": 12, "f101": 8, "f102": 8, "f103": 8, "f104": 10, "f105": 7, "f106": 8, "f107": 8,
-                    "f_number": 6, "f_Capital": 4, "f_apostrophe": np.inf, "f_plural": 6, "f_bio": np.inf}
-    threshold_m2 = {"f100": 7, "f101": 8, "f102": 8, "f103": 6, "f104": 10, "f105": 7, "f106": 8, "f107": 8,
-                    "f_number": 8, "f_Capital": 4, "f_apostrophe": np.inf, "f_plural": 10, "f_bio": 8}
+                    "f_number": 6, "f_Capital": 4, "f_apostrophe": np.inf, "f_plural": 6, "f_bio_pre_suf": np.inf, "f_hyfen": 8,
+                    "f_econ_terms": 8, "f_bio_terms": np.inf, "f_CapCap": 7, "f_CapCapCap": 7, "f_allCap": 7,
+                    "f_dot": 8}
+    threshold_m2 = {"f100": 7, "f101": 8, "f102": 9, "f103": 6, "f104": 10, "f105": 7, "f106": 8, "f107": np.inf,
+                    "f_number": 6, "f_Capital": 4, "f_apostrophe": np.inf, "f_plural": 10, "f_bio_pre_suf": 8, "f_hyfen": 7,
+                    "f_econ_terms": np.inf, "f_bio_terms": 8, "f_CapCap": np.inf, "f_CapCapCap": np.inf, "f_allCap": 5,
+                    "f_dot": 7}
 
     lam = 0.1
 
-    # # model 1
-    # train1_path = "data/train1.wtag"
-    # test_train_1_path = "data/train_test1.wtag" # for testing purposes
-    # shutil.copy(train1_path, test_train_1_path)
-    # test_path = "data/test1.wtag" # for testing purposes
-    # weights1_path = 'weights1.pkl'
-    # predictions1_path = 'predictions1.wtag'
+    # model 1
+    train1_path = "data/train1.wtag"
+    test_train_1_path = "data/train_test1.wtag" # for testing purposes
+    shutil.copy(train1_path, test_train_1_path)
+    test_path = "data/test1.wtag" # for testing purposes
+    weights1_path = 'weights1.pkl'
+    predictions1_path = 'predictions1.wtag'
     
-    # statistics, feature2id1 = preprocess_train(train1_path, threshold_m1)
-    # get_optimal_vector(statistics = statistics, feature2id = feature2id1, weights_path = weights1_path, lam=lam)
+    statistics, feature2id1 = preprocess_train(train1_path, threshold_m1)
+    get_optimal_vector(statistics = statistics, feature2id = feature2id1, weights_path = weights1_path, lam=lam)
 
-    # with open(weights1_path, 'rb') as f:
-    #     optimal_params, feature2id1 = pickle.load(f)
-    # pre_trained_weights_1 = optimal_params[0]
+    with open(weights1_path, 'rb') as f:
+        optimal_params, feature2id1 = pickle.load(f)
+    pre_trained_weights_1 = optimal_params[0]
     
-    # print(pre_trained_weights_1)
-    # tag_all_test(test_path, pre_trained_weights_1, feature2id1, predictions1_path)
+    print(pre_trained_weights_1)
+    tag_all_test(test_path, pre_trained_weights_1, feature2id1, predictions1_path)
 
-    # #------------------------------------------------------------
-    # # Compute and print accuracy if test_path is a labeled file
-    # if 'test1.wtag' in test_path:
-    #     acc_test1, _ = compare_files(test_path, predictions1_path)
-    #     print(f'Model 1 - test accuracy')
-    #     print(f"Token-level accuracy on test set: {acc_test1*100:.2f}%")
-    # #------------------------------------------------------------
+    #------------------------------------------------------------
+    # Compute and print accuracy if test_path is a labeled file
+    if 'test1.wtag' in test_path:
+        acc_test1, _ = compare_files(test_path, predictions1_path)
+        print(f'Model 1 - test accuracy')
+        print(f"Token-level accuracy on test set: {acc_test1*100:.2f}%")
+    #------------------------------------------------------------
 
-    # predictions1_on_train_path = 'predictions1_on_train.wtag'
-    # tag_all_test(test_train_1_path, pre_trained_weights_1, feature2id1, predictions1_on_train_path)
-    # #------------------------------------------------------------
-    # # Compute and print accuracy if train_path is a labeled file
-    # if 'test1.wtag' in test_train_1_path:
-    #     acc_train1, _ = compare_files(test_train_1_path, predictions1_on_train_path)
-    #     print(f'Model 1 - train accuracy')
-    #     print(f"Token-level accuracy on train set: {acc_train1*100:.2f}%")
-    # #------------------------------------------------------------
+    predictions1_on_train_path = 'predictions1_on_train.wtag'
+    tag_all_test(test_train_1_path, pre_trained_weights_1, feature2id1, predictions1_on_train_path)
+    #------------------------------------------------------------
+    # Compute and print accuracy if train_path is a labeled file
+    if 'test1.wtag' in test_train_1_path:
+        acc_train1, _ = compare_files(test_train_1_path, predictions1_on_train_path)
+        print(f'Model 1 - train accuracy')
+        print(f"Token-level accuracy on train set: {acc_train1*100:.2f}%")
+    #------------------------------------------------------------
     # compute and print confusion matrix
     #TODO: print confusion matrix
 

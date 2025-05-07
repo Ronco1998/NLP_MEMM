@@ -9,6 +9,7 @@ TAG = 1
 
 NUMBER_WORDS = {"zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
                  "hundred", "thousand", "million", "billion"}
+
 # added known prefixes and suffixes for biology - can add\edit acording to outside knowledge
 prefixes_bio = {"ana", "angio", "arthr", "arthro", "auto", "blast", "cephal", "cephalo", "chrom", "chromo",
                 "cyto", "dactyl", "diplo", "ect", "ecto", "end", "endo", "epi", "erythr", "erythro",
@@ -19,14 +20,40 @@ suffixes_bio = {"ase", "cyte" "derm", "dermis", "ectomy", "stomy", "emia", "aemi
                 "kinesia", "lysis", "oma", "osis", "otic", "otomy", "tomy", "penia", "phage", "phagia",
                 "phile", "philic", "plasm", "plasmo", "scope", "stasis", "troph", "trophy"}
 
+# known terms for economics 
+economics_terms = {"inflation", "deflation", "GDP", "interest rate", "bond", "stock", "equity", "debt", "credit",
+                   "capital", "investment", "market", "currency", "exchange rate", "recession", "depression"}
+
+# known terms for biology
+biology_terms = {"cell", "gene", "DNA", "RNA", "protein", "enzyme", "chromosome", "nucleus", "mitochondria",
+                "ribosome", "membrane", "organism", "species", "ecosystem", "evolution", "mutation",
+                "photosynthesis", "cellular respiration", "homeostasis", "genome", "biotechnology",
+                "genetic engineering"}
+
 class FeatureStatistics:
     def __init__(self):
         self.n_total_features = 0  # Total number of features accumulated
 
         # Init all features dictionaries
         feature_dict_list = ["f100", "f101", "f102", "f103", "f104", "f105", "f106", "f107",
-                              "f_number", "f_Capital", "f_apostrophe", "f_plural", "f_bio"]  # added f_plural + f_bio
-        #TODO: why f_apostrophe?
+                             "f_number", "f_Capital", "f_apostrophe", "f_plural", "f_bio_pre_suf",
+                             "f_hyfen", "f_econ_terms", "f_bio_terms", "f_CapCap", "f_CapCapCap",
+                             "f_allCap", "f_dot"]  # added f_plural + f_bio_pre_suf
+        
+        #TODO: add feature that checks if the previous word started with a capital letter and also the current word - NNP, NNPS
+        # f_CapCap, f_CapCapCap
+
+        #TODO: add feature that checks if all letters in word are capital letters - NNP, NNPS
+        # f_allCap
+
+        #TODO: add feature that checks if a word finished with a period - NNP, NNPS, FW
+        # f_dot
+
+        #TODO: add feature for known terms in economics and biology - NN, NNS, 
+
+        #TODO: add feature about foreign words somehow
+
+        ## words with ".", look for common prefix/suffix/roots
         self.feature_rep_dict = {fd: OrderedDict() for fd in feature_dict_list}
         '''
         A dictionary containing the counts of each data regarding a feature class. For example in f100, would contain
@@ -131,11 +158,24 @@ class FeatureStatistics:
 
     def check_feature_f_Capital(self, cur_word, cur_tag):
         # Fires if the word starts with a capital letter
-        return cur_word and cur_word[0].isupper()
+        return cur_word[0].isupper() and cur_tag in {"NNP", "NNPS"}
+    
+    #TODO: shound the current word also start with a capital letter?
+    def check_feature_f_CapCap(self, word_idx, split_words, cur_tag):
+        # Fires if the word starts with a capital letter and the previous word is also capitalized
+        return word_idx >= 1 and split_words[word_idx - 1][0].isupper() and cur_tag in {"NNP", "NNPS"}
+    
+    def check_feature_f_CapCapCap(self, word_idx, split_words, cur_tag):
+        # Fires if the word starts with a capital letter and the previous two words are also capitalized
+        return word_idx >= 2 and split_words[word_idx - 1][0].isupper() and split_words[word_idx - 2][0].isupper() and cur_tag in {"NNP", "NNPS"}
 
+    #TODO: use this or delete it?
     def check_feature_f_apostrophe(self, cur_word, cur_tag):
         return "'" in cur_word
-
+    
+    def check_feature_f_hyfen(self, cur_word, cur_tag):
+        return ("-" in cur_word) and cur_tag in {"NN", "NNP", "JJ", "NNS"}
+    
     def check_feature_f_plural(self, cur_word, cur_tag):
         # Fires if the word is likely plural (simple heuristic)
         return cur_word.lower().endswith('s') and cur_tag in {"NNS", "NNPS"}
@@ -149,6 +189,22 @@ class FeatureStatistics:
             if cur_word.endswith(suffix) and cur_tag in {"NN", "NNS"}:
                 return True
         return False
+    
+    def check_feature_f_econ_terms(self, cur_word, cur_tag):
+        # Check if the word is a known economics term
+        return cur_word.lower() in economics_terms and cur_tag in {"NN", "NNS"}
+    
+    def check_feature_f_bio_terms(self, cur_word, cur_tag):
+        # Check if the word is a known biology term
+        return cur_word.lower() in biology_terms and cur_tag in {"NN", "NNS"}
+
+    def check_feature_f_allCap(self, cur_word, cur_tag):
+        # Check if the word is all capital letters
+        return cur_word.isupper() and cur_tag in {"NNP", "NNPS"}
+
+    def check_feature_f_dot(self, cur_word, cur_tag):
+        # Check if the word ends with a period
+        return (cur_word.endswith('.') or '.' in cur_word) and cur_tag in {"NNP", "NNPS", "FW"}
 
     def check_all_features(self, feature_rep_dict, cur_word, cur_tag, word_idx, split_words):
 
@@ -177,7 +233,21 @@ class FeatureStatistics:
         if self.check_feature_f_plural(cur_word, cur_tag):
             feature_rep_dict["f_plural"][(cur_word, cur_tag)] = feature_rep_dict["f_plural"].get((cur_word, cur_tag), 0) + 1
         if self.check_feature_f_bio(cur_word, cur_tag):
-            feature_rep_dict["f_bio"][(cur_word, cur_tag)] = feature_rep_dict["f_bio"].get((cur_word, cur_tag), 0) + 1
+            feature_rep_dict["f_bio_pre_suf"][(cur_word, cur_tag)] = feature_rep_dict["f_bio_pre_suf"].get((cur_word, cur_tag), 0) + 1
+        if self.check_feature_f_hyfen(cur_word, cur_tag):
+            feature_rep_dict["f_hyfen"][(cur_word, cur_tag)] = feature_rep_dict["f_hyfen"].get((cur_word, cur_tag), 0) + 1
+        if self.check_feature_f_econ_terms(cur_word, cur_tag):
+            feature_rep_dict["f_econ_terms"][(cur_word, cur_tag)] = feature_rep_dict["f_econ_terms"].get((cur_word, cur_tag), 0) + 1
+        if self.check_feature_f_bio_terms(cur_word, cur_tag):
+            feature_rep_dict["f_bio_terms"][(cur_word, cur_tag)] = feature_rep_dict["f_bio_terms"].get((cur_word, cur_tag), 0) + 1
+        if self.check_feature_f_CapCap(word_idx, split_words, cur_tag):
+            feature_rep_dict["f_CapCap"][(split_words[word_idx - 1].split('_')[1], cur_tag)] = feature_rep_dict["f_CapCap"].get((split_words[word_idx - 1].split('_')[1], cur_tag), 0) + 1
+        if self.check_feature_f_CapCapCap(word_idx, split_words, cur_tag):
+            feature_rep_dict["f_CapCapCap"][(split_words[word_idx - 2].split('_')[1], split_words[word_idx - 1].split('_')[1], cur_tag)] = feature_rep_dict["f_CapCapCap"].get((split_words[word_idx - 2].split('_')[1], split_words[word_idx - 1].split('_')[1], cur_tag), 0) + 1
+        if self.check_feature_f_allCap(cur_word, cur_tag):
+            feature_rep_dict["f_allCap"][(cur_word, cur_tag)] = feature_rep_dict["f_allCap"].get((cur_word, cur_tag), 0) + 1
+        if self.check_feature_f_dot(cur_word, cur_tag):
+            feature_rep_dict["f_dot"][(cur_word, cur_tag)] = feature_rep_dict["f_dot"].get((cur_word, cur_tag), 0) + 1
 
 
 class Feature2id:
@@ -207,7 +277,14 @@ class Feature2id:
             "f_Capital": OrderedDict(),
             # "f_apostrophe": OrderedDict(),
             "f_plural": OrderedDict(),
-            "f_bio": OrderedDict()
+            "f_bio_pre_suf": OrderedDict(),
+            "f_hyfen": OrderedDict(), 
+            "f_econ_terms": OrderedDict(),
+            "f_bio_terms": OrderedDict(),
+            "f_CapCap": OrderedDict(),
+            "f_CapCapCap": OrderedDict(),
+            "f_allCap": OrderedDict(),
+            "f_dot": OrderedDict()
         }
         self.represent_input_with_features = OrderedDict()
         self.histories_matrix = OrderedDict()
@@ -300,6 +377,8 @@ def represent_input_with_features(history: Tuple, dict_of_dicts: Dict[str, Dict[
         if (suffix, c_tag) in dict_of_dicts["f102"]:
             features.append(dict_of_dicts["f102"][(suffix, c_tag)])
 
+    # {current_word, current_tag, previous_word, previous_tag, pre_previous_word, pre_previous_tag, next_word}
+
     # f103: previous two tags are (X, Y) and current tag is T
     if (history[5], history[3], c_tag) in dict_of_dicts["f103"]:
         features.append(dict_of_dicts["f103"][(history[5], history[3], c_tag)])
@@ -307,6 +386,21 @@ def represent_input_with_features(history: Tuple, dict_of_dicts: Dict[str, Dict[
     # f104: previous tag is X and current tag is T
     if (history[3], c_tag) in dict_of_dicts["f104"]:
         features.append(dict_of_dicts["f104"][(history[3], c_tag)])
+
+    #TODO: in CapCap and CapCapCap, should the current word also start with a capital letter?
+    
+    # f_CapCap: fires if the previous word is also capitalized
+    if (history[3], c_tag) in dict_of_dicts["f_CapCap"] and history[2][0].isupper():
+        features.append(dict_of_dicts["f_CapCap"][(history[3], c_tag)])
+
+    # f_CapCapCap: fires if the previous two words are also capitalized
+    if (history[5], history[3], c_tag) in dict_of_dicts["f_CapCapCap"] and history[2][0].isupper() and history[4][0].isupper():
+        features.append(dict_of_dicts["f_CapCapCap"][(history[5], history[3], c_tag)])
+
+    # f_Capital: fires if the word starts with a capital letter and current tag is T
+    if c_word and c_word[0].isupper():
+        if (c_word, c_tag) in dict_of_dicts.get("f_Capital", {}):
+            features.append(dict_of_dicts["f_Capital"][(c_word, c_tag)])
 
     # f105: current tag is T
     if (c_tag,) in dict_of_dicts["f105"]:
@@ -325,11 +419,6 @@ def represent_input_with_features(history: Tuple, dict_of_dicts: Dict[str, Dict[
         if (c_word, c_tag) in dict_of_dicts.get("f_number", {}):
             features.append(dict_of_dicts["f_number"][(c_word, c_tag)])
 
-    # f_Capital: fires if the word starts with a capital letter and current tag is T
-    if c_word and c_word[0].isupper():
-        if (c_word, c_tag) in dict_of_dicts.get("f_Capital", {}):
-            features.append(dict_of_dicts["f_Capital"][(c_word, c_tag)])
-
     # f_apostrophe: fires if the word contains an apostrophe and current tag is T
     if "'" in c_word:
         if (c_word, c_tag) in dict_of_dicts.get("f_apostrophe", {}):
@@ -339,10 +428,27 @@ def represent_input_with_features(history: Tuple, dict_of_dicts: Dict[str, Dict[
     if (c_word, c_tag) in dict_of_dicts.get("f_plural", {}):
         features.append(dict_of_dicts["f_plural"][(c_word, c_tag)])
 
-    # f_bio: fires if the word starts with a known prefix or ends with a known suffix and current tag is NNS or NNPS
-    if (c_word, c_tag) in dict_of_dicts.get("f_bio", {}):
-        features.append(dict_of_dicts["f_bio"][(c_word, c_tag)])
+    # f_bio: fires if the word starts with a known prefix or ends with a known suffix from the biology domain
+    if (c_word, c_tag) in dict_of_dicts.get("f_bio_pre_suf", {}):
+        features.append(dict_of_dicts["f_bio_pre_suf"][(c_word, c_tag)])
     #TODO: check if this does what its supposed to
+
+    # f_hyfen: fires if the word contains a hyphen and current tag is T
+    if "-" in c_word:
+        if (c_word, c_tag) in dict_of_dicts.get("f_hyfen", {}):
+            features.append(dict_of_dicts["f_hyfen"][(c_word, c_tag)])
+    
+    if (c_word, c_tag) in dict_of_dicts.get("f_econ_terms", {}):
+        features.append(dict_of_dicts["f_econ_terms"][(c_word, c_tag)])
+    
+    if (c_word, c_tag) in dict_of_dicts.get("f_bio_terms", {}):
+        features.append(dict_of_dicts["f_bio_terms"][(c_word, c_tag)])
+
+    if (c_word, c_tag) in dict_of_dicts.get("f_allCap", {}):
+        features.append(dict_of_dicts["f_allCap"][(c_word, c_tag)])
+
+    if (c_word, c_tag) in dict_of_dicts.get("f_dot", {}):
+        features.append(dict_of_dicts["f_dot"][(c_word, c_tag)])
 
     return features
 
