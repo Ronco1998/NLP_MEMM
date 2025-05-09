@@ -38,7 +38,7 @@ class FeatureStatistics:
         feature_dict_list = ["f100", "f101", "f102", "f103", "f104", "f105", "f106", "f107",
                              "f_number", "f_Capital", "f_apostrophe", "f_plural", "f_bio_pre_suf",
                              "f_hyfen", "f_econ_terms", "f_bio_terms", "f_CapCap", "f_CapCapCap",
-                             "f_allCap", "f_dot"]  # added f_plural + f_bio_pre_suf
+                             "f_allCap", "f_dot"] 
 
         #TODO: add feature about foreign words somehow
 
@@ -165,11 +165,11 @@ class FeatureStatistics:
 
     # the current word is a capitalized word and the previous word is also capitalized
     def check_feature_f_CapCap(self, word_idx, split_words, cur_tag):
-        return word_idx >= 1 and split_words[word_idx - 1][0].isupper() and split_words[word_idx][0].isupper() # and cur_tag in {"NNP", "NNPS"}
+        return word_idx >= 1 and split_words[word_idx - 1][0].isupper() and split_words[word_idx][0].isupper() and cur_tag in {"NNP", "NNPS"}
     
     # the current word is a capitalized word and the previous two words are also capitalized
     def check_feature_f_CapCapCap(self, word_idx, split_words, cur_tag):
-        return word_idx >= 2 and split_words[word_idx - 1][0].isupper() and split_words[word_idx - 2][0].isupper() and split_words[word_idx][0].isupper() # and cur_tag in {"NNP", "NNPS"}
+        return word_idx >= 2 and split_words[word_idx - 1][0].isupper() and split_words[word_idx - 2][0].isupper() and split_words[word_idx][0].isupper() and cur_tag in {"NNP", "NNPS"}
 
     # the current word has an apostrophe
     def check_feature_f_apostrophe(self, cur_word, cur_tag):
@@ -188,10 +188,10 @@ class FeatureStatistics:
     def check_feature_f_bio(self, cur_word, cur_tag):
         # Check if the word starts with a known prefix or ends with a known suffix
         for prefix in prefixes_bio:
-            if cur_word.startswith(prefix) and cur_tag in {"NN", "NNS"}:
+            if cur_word.startswith(prefix): # and cur_tag in {"NN", "NNS"}:
                 return True
         for suffix in suffixes_bio:
-            if cur_word.endswith(suffix) and cur_tag in {"NN", "NNS"}:
+            if cur_word.endswith(suffix):# and cur_tag in {"NN", "NNS"}:
                 return True
         return False
     
@@ -207,12 +207,12 @@ class FeatureStatistics:
 
     # the current word is all capital letters
     def check_feature_f_allCap(self, cur_word, cur_tag):
-        return cur_word.isupper() # and cur_tag in {"NN", "NNS", "NNP", "NNPS"}
+        return cur_word.isupper() and cur_tag in {"NN", "NNP"}
 
     # the current word ends with a period
     def check_feature_f_dot(self, cur_word, cur_tag):
         # Check if the word ends with a period
-        return cur_word.endswith('.') # and cur_tag in {"NNP", "NNPS", "FW"}
+        return cur_word.endswith('.') and cur_tag in {"NNP", "NNPS", "FW"}
 
     def check_all_features(self, feature_rep_dict, cur_word, cur_tag, word_idx, split_words):
 
