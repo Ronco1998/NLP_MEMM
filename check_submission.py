@@ -8,8 +8,9 @@ import zipfile
 import shutil
 import pickle
 
+OUTPUT_DIRECTORY_PATH = "your_unzip_submission"
 COMP_FILES_PATH = 'comps files'
-MODELS_PATH = 'trained_models'
+MODELS_PATH = f'{OUTPUT_DIRECTORY_PATH}/trained_models'
 ID1 = input("Insert ID1: ")
 ID2 = input("Insert ID2 (press ENTER if submitting alone):")
 
@@ -100,7 +101,7 @@ def calc_scores(e):
             comp1_file = f'{cur_dir}/{comp1_file[0]}'
             #comp1, prob1 = compare_files('data/comp1.wtag', comp1_file)
             #comp1 = round(comp1 * 100, 2)
-            comp1 = np.round(np.random.uniform(0, 100), 2)
+            comp1 = np.round(np.random.uniform(10, 100), 2)
         if len(comp2_file) != 1:
             print(f'{sub} has a problem with m2!')
             e = True
@@ -110,15 +111,15 @@ def calc_scores(e):
             comp2_file = f'{cur_dir}/{comp2_file[0]}'
             #comp2, prob2 = compare_files('data/comp2.wtag', comp2_file)
             #comp2 = round(comp2 * 100, 2)
-            comp2 = np.round(np.random.uniform(0, 100), 2)
+            comp2 = np.round(np.random.uniform(10, 100), 2)
 
         cur_score = {f'ID {idx + 1}': cur_id for idx, cur_id in enumerate(ids)}
         cur_score['Comp 1 Acc'] = comp1
         cur_score['Comp 2 Acc'] = comp2
         print("Fake score for comp1: "+str(comp1))
         print("Fake score for comp2: "+str(comp2))
-        if comp1 and comp1 and float(comp1) + float(comp2) < 10:
-            print("Something wrong with your Comp files.")
+        if comp1 and comp2 and float(comp1) + float(comp2) < 10:
+            print("Something wrong with your comp files.")
         else:
             if not e:
                 print("It looks like you are ready to submit!")
@@ -132,6 +133,7 @@ def calc_scores(e):
 
 def check_model_size(e):
     curr_model = f"{MODELS_PATH}/weights_1.pkl"
+    print(curr_model)
     try:
         with open(curr_model, 'rb') as f:
             optimal_params, feature2id = pickle.load(f)
@@ -148,8 +150,8 @@ def check_model_size(e):
         with open(curr_model, 'rb') as f:
             optimal_params, feature2id = pickle.load(f)
             print(f"Number of features for model 2: {feature2id.n_total_features}")
-            if feature2id.n_total_features > 1000:
-                print("Model 2 exceeded the model size limit. The limit is 1,000.")
+            if feature2id.n_total_features > 5000:
+                print("Model 2 exceeded the model size limit. The limit is 5,000.")
                 e = True
     except:
         print("Model 2 does not exist or is corrupted.")
@@ -166,20 +168,25 @@ def open_zip():
     if zip_file_path not in os.listdir():
         print(f"{zip_file_path} does not exists.")
         return True
-    output_directory_path = "your_unzip_submission"
-    unzip_directory(zip_file_path, output_directory_path)
-    dir_files = os.listdir(output_directory_path)
+    unzip_directory(zip_file_path, OUTPUT_DIRECTORY_PATH)
+    dir_files = os.listdir(OUTPUT_DIRECTORY_PATH)
     if len(dir_files) > 5:
         print("The submission contains redundant files.")
         errors = True
     comp_files = [f"comp_m1_{id_suffix}.wtag", f"comp_m2_{id_suffix}.wtag"]
-    req_files = [f"report_{id_suffix}.pdf", "code", "generate_comp_tagged.py", "trained_models"] + comp_files
+    req_files = [f"report_{id_suffix}.pdf", "code", "trained_models"] + comp_files
+    req_code_files = ["generate_comp_tagged.py", "main.py"]
     for file in req_files:
         if file not in dir_files:
             print(f"{file} does not exist.")
             errors = True
+    code_dir_files = os.listdir(f"{OUTPUT_DIRECTORY_PATH}/code")
+    for file in req_code_files:
+        if file not in code_dir_files:
+            print(f"{file} does not exist in your code files.")
+            errors = True
     for file in comp_files:
-        shutil.copy(os.path.join(output_directory_path, file), os.path.join(COMP_FILES_PATH, f"{id_suffix}"))
+        shutil.copy(os.path.join(OUTPUT_DIRECTORY_PATH, file), os.path.join(COMP_FILES_PATH, f"{id_suffix}"))
     return errors
 
 if __name__ == '__main__':
