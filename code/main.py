@@ -3,22 +3,68 @@ import pickle
 from preprocessing import preprocess_train
 from optimization import get_optimal_vector
 from inference import tag_all_test
-from sklearn.metrics import confusion_matrix
 import numpy as np
 import random
 
-# ----------------------------------------------------------------
-import sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from check_submission import compare_files
-# ----------------------------------------------------------------
-
 # Perform the equivalent of shutil.copy using basic file operations
-def copy_file(src, dst):
-    with open(src, 'rb') as f_src:  # Open the source file in binary read mode
-        data = f_src.read()        # Read the entire content of the source file
-    with open(dst, 'wb') as f_dst: # Open the destination file in binary write mode
-        f_dst.write(data)          # Write the content to the destination file
+
+def compare_files(true_file, pred_file):
+    with open(true_file, 'r') as f:
+        true_data = [x.strip() for x in f.readlines() if x != '']
+    with open(pred_file, 'r') as f:
+        pred_data = [x.strip() for x in f.readlines() if x != '']
+    if len(pred_data) != len(true_data):
+        if len(pred_data) > len(true_data):
+            pred_data = pred_data[:len(true_data)]
+        else:
+            raise KeyError
+    num_correct, num_total = 0, 0
+    prob_sent = set()
+    predictions, true_labels = [], []
+    for idx, sen in enumerate(true_data):
+        pred_sen = pred_data[idx]
+        if pred_sen.endswith('._.') and not pred_sen.endswith(' ._.'):
+            pred_sen = pred_sen[:-3] + ' ._.'
+        true_words = [x.split('_')[0] for x in sen.split()]
+        true_tags = [x.split('_')[1] for x in sen.split()]
+        true_labels += true_tags
+        pred_words = [x.split('_')[0] for x in pred_sen.split()]
+        try:
+            pred_tags = [x.split('_')[1] for x in pred_sen.split()]
+            predictions += pred_tags
+        except IndexError:
+            prob_sent.add(idx)
+            pred_tags = []
+            for x in pred_sen.split():
+                if '_' in x:
+                    pred_tags.append(x.split('_'))
+                else:
+                    pred_tags.append(None)
+        if pred_words[-1] == '~':
+            pred_words = pred_words[:-1]
+            pred_tags = pred_tags[:-1]
+        if pred_words != true_words:
+            prob_sent.add(idx)
+        elif len(pred_tags) != len(true_tags):
+            prob_sent.add(idx)
+        for i, (tt, tw) in enumerate(zip(true_tags, true_words)):
+            num_total += 1
+            if len(pred_words) > i:
+                pw = pred_words[i]
+                pt = pred_tags[i]
+            else:
+                prob_sent.add(idx)
+                continue
+            if pw != tw:
+                continue
+            if tt == pt:
+                num_correct += 1
+        pass
+    labels = sorted(list(set(true_labels)))
+    if len(prob_sent) > 0:
+        print(prob_sent)
+
+    return num_correct / num_total, prob_sent
 
 def perform_k_fold_cross_validation(k, train2_path, weights2_path, threshold, lam):
     # Load the dataset
@@ -103,7 +149,6 @@ def perform_k_fold_cross_validation(k, train2_path, weights2_path, threshold, la
         if os.path.exists(test_fold_path):
             os.remove(test_fold_path)
 
-
 def main():
     # threshold = 8  # or higher, experiment to get under 10,000 features
     threshold_m1 = {"f100": 7, "f101": 7, "f102": 7, "f103": 7, "f104": 9, "f105": 9, "f106": 20, "f107": 20,
@@ -120,8 +165,6 @@ def main():
 
     # model 1
     train1_path = "data/train1.wtag"
-    test_train_1_path = "data/train_test1.wtag" # for testing purposes
-    copy_file(train1_path, test_train_1_path)
     test_path = "data/test1.wtag" # for testing purposes
     weights1_path = 'weights1.pkl'
     predictions1_path = 'predictions1.wtag'
@@ -136,73 +179,33 @@ def main():
     print(pre_trained_weights_1)
     tag_all_test(test_path, pre_trained_weights_1, feature2id1, predictions1_path)
 
+    # -----------------------------------------------------------------------------------------------------------------------
 
     # model 2 -> 5-fold cross-validation of train2.wtag to find a good model
     train2_path = "data/train2.wtag"
-    # creating a copy of the train2.wtag for testing purposes (only for us)
-    test_on_train_path = "data/test2.wtag" 
-    copy_file(train2_path, test_on_train_path)
-
     weights2_path = 'weights2.pkl'
     k = 5 # how many folds to use for cross-validation
     perform_k_fold_cross_validation(k, train2_path, weights2_path, threshold_m2, lam2)
-
-    # After cross-validation, use the averaged weights for tagging
-    predictions2_on_train_path = 'predictions2_on_train.wtag'
 
     # Ensure the weights2_path and feature2id2 are correctly used for tagging
     with open(weights2_path, 'rb') as f:
         optimal_params2, feature2id2 = pickle.load(f)
     pre_trained_weights_2 = optimal_params2[0]  # Extract weights
 
-    # Use the best weights and feature2id for tagging
-    tag_all_test(test_on_train_path, pre_trained_weights_2, feature2id2, predictions2_on_train_path)
+    # -----------------------------------------------------------------------------------------------------------------------
 
-    predictions1_on_train_path = 'predictions1_on_train.wtag'
-    tag_all_test(test_train_1_path, pre_trained_weights_1, feature2id1, predictions1_on_train_path)
-    
-    # competition part - creating the tagged files for submission!
+    # competition part
+    # creating the tagged files for submission!
+
     # comp1
     comp1_path = "data/comp1.words" # for competition purposes
     predictions_path_comp1 = 'comp_m1_341241297_206134867.wtag'
-    tagged_comp1_path = 'data/comp1_tagged.wtag'
     tag_all_test(comp1_path, pre_trained_weights_1, feature2id1, predictions_path_comp1)
 
     # comp2
     comp2_path = "data/comp2.words" # for competition purposes
     predictions_path_comp2 = 'comp_m2_341241297_206134867.wtag'
-    tagged_comp2_path = 'data/comp2_tagged.wtag'
     tag_all_test(comp2_path, pre_trained_weights_2, feature2id2, predictions_path_comp2)
-
-    # --------------------------------------------------------------------------------------------
-
-    print(f'Number of features for model 1: {feature2id1.n_total_features}')
-    
-    if 'test1.wtag' in test_path:
-        acc_test1, _ = compare_files(test_path, predictions1_path)
-        print(f'Model 1 - test accuracy')
-        print(f"Token-level accuracy on test set: {acc_test1*100:.2f}%")
-
-    if 'test1.wtag' in test_train_1_path:
-        acc_train1, _ = compare_files(test_train_1_path, predictions1_on_train_path)
-        print(f'Model 1 - train accuracy')
-        print(f"Token-level accuracy on train set: {acc_train1*100:.2f}%")
-
-    print(f'Number of features for model 2: {feature2id2.n_total_features}')
-
-    if 'test2.wtag' in test_on_train_path:
-        acc_train2, _ = compare_files(test_on_train_path, predictions2_on_train_path)
-        print(f'Model 2 - train accuracy')
-        print(f"Token-level accuracy on train set: {acc_train2*100:.2f}%")
-    # --------------------------------------------------------------------------------------------
-    
-    acc_comp1, _ = compare_files(tagged_comp1_path, predictions_path_comp1)
-    print(f'Comp 1 -  accuracy')
-    print(f"Token-level accuracy on tagged comp set: {acc_comp1*100:.2f}%")
-
-    acc_comp2, _ = compare_files(tagged_comp2_path, predictions_path_comp2)
-    print(f'Comp 2 - accuracy')
-    print(f"Token-level accuracy on tagged comp set: {acc_comp2*100:.2f}%")
 
 
 if __name__ == '__main__':

@@ -2,7 +2,6 @@ from scipy import sparse
 from collections import OrderedDict, defaultdict
 import numpy as np
 from typing import List, Dict, Tuple
-import string
 
 WORD = 0
 TAG = 1
@@ -40,9 +39,6 @@ class FeatureStatistics:
                              "f_hyfen", "f_econ_terms", "f_bio_terms", "f_CapCap", "f_CapCapCap",
                              "f_allCap", "f_dot"] 
 
-        #TODO: add feature about foreign words somehow
-
-        ## words with ".", look for common prefix/suffix/roots
         self.feature_rep_dict = {fd: OrderedDict() for fd in feature_dict_list}
         '''
         A dictionary containing the counts of each data regarding a feature class. For example in f100, would contain
@@ -163,16 +159,11 @@ class FeatureStatistics:
     def check_feature_f_number(self, cur_word, cur_tag, word_idx=None, split_words=None):
         return any(char.isdigit() for char in cur_word) or cur_word.lower() in NUMBER_WORDS
 
-    # the current word starts with a capital letter and is a proper noun
-
+    # the current word starts with a capital letter and is a noun
     def check_feature_f_Capital(self, cur_word, cur_tag):
         # Fires if the word starts with a capital letter
         return cur_word[0].isupper() and cur_tag in {"NNP", "NNPS"}
     
-    #TODO: shound the current word also start with a capital letter?
-    # try once without it
-    # and should it be curr_tag in {"NNP", "NNPS"}?
-
     # the current word is a capitalized word and the previous word is also capitalized
     def check_feature_f_CapCap(self, word_idx, split_words, cur_tag):
         return word_idx >= 1 and split_words[word_idx - 1][0].isupper() and split_words[word_idx][0].isupper() and cur_tag in {"NNP", "NNPS"}
@@ -188,30 +179,28 @@ class FeatureStatistics:
     # the current word finishes with an 's', and is a noun or proper noun (plura!)
     def check_feature_f_plural(self, cur_word, cur_tag):
         # Fires if the word is likely plural (simple heuristic)
-        return cur_word.lower().endswith('s') # and cur_tag in {"NNPS"} #trial
+        return cur_word.lower().endswith('s') 
     
-    # in last trial: didnt take into account the tag of the current word (plural, capitals and hyfen)
-
     # the current word has a prefix or suffix that is known in biology and is a noun
     def check_feature_f_bio(self, cur_word, cur_tag):
         # Check if the word starts with a known prefix or ends with a known suffix
         for prefix in prefixes_bio:
-            if cur_word.startswith(prefix): # and cur_tag in {"NN", "NNS"}:
+            if cur_word.startswith(prefix): 
                 return True
         for suffix in suffixes_bio:
-            if cur_word.endswith(suffix):# and cur_tag in {"NN", "NNS"}:
+            if cur_word.endswith(suffix):
                 return True
         return False
     
     # the current word is a known economics term
     def check_feature_f_econ_terms(self, cur_word, cur_tag):
         in_somehow = (term in cur_word.lower() for term in economics_terms)
-        return any(in_somehow) # and cur_tag in {"NN", "NNS"}
+        return any(in_somehow)
     
     # the current word is a known biology term
     def check_feature_f_bio_terms(self, cur_word, cur_tag):
         in_somehow = (term in cur_word.lower() for term in biology_terms)
-        return any(in_somehow) # and cur_tag in {"NN", "NNS"}
+        return any(in_somehow)
 
     # the current word is all capital letters
     def check_feature_f_allCap(self, cur_word, cur_tag):
@@ -221,12 +210,8 @@ class FeatureStatistics:
     def check_feature_f_dot(self, cur_word, cur_tag):
         # Check if the word ends with a period
         return cur_word.endswith('.') and cur_tag in {"NNP", "NNPS", "FW"}
-    
-    
-
 
     def check_all_features(self, feature_rep_dict, cur_word, cur_tag, word_idx, split_words):
-
         if self.check_feature_f100(cur_word, cur_tag):
             feature_rep_dict["f100"][(cur_word, cur_tag)] = feature_rep_dict["f100"].get((cur_word, cur_tag), 0) + 1
         if self.check_feature_f101(cur_word, cur_tag):
@@ -392,7 +377,6 @@ def represent_input_with_features(history: Tuple, dict_of_dicts: Dict[str, Dict[
         if (suffix, c_tag) in dict_of_dicts["f102"]:
             features.append(dict_of_dicts["f102"][(suffix, c_tag)])
 
-    # {current_word, current_tag, previous_word, previous_tag, pre_previous_word, pre_previous_tag, next_word}
 
     # f103: previous two tags are (X, Y) and current tag is T
     if (history[5], history[3], c_tag) in dict_of_dicts["f103"]:
@@ -401,8 +385,6 @@ def represent_input_with_features(history: Tuple, dict_of_dicts: Dict[str, Dict[
     # f104: previous tag is X and current tag is T
     if (history[3], c_tag) in dict_of_dicts["f104"]:
         features.append(dict_of_dicts["f104"][(history[3], c_tag)])
-
-    #TODO: in CapCap and CapCapCap, should the current word also start with a capital letter?
     
     # f_CapCap: fires if the previous word is also capitalized
     if (history[3], c_tag) in dict_of_dicts["f_CapCap"] and history[2][0].isupper():
@@ -441,7 +423,6 @@ def represent_input_with_features(history: Tuple, dict_of_dicts: Dict[str, Dict[
     # f_bio: fires if the word starts with a known prefix or ends with a known suffix from the biology domain
     if (c_word, c_tag) in dict_of_dicts.get("f_bio_pre_suf", {}):
         features.append(dict_of_dicts["f_bio_pre_suf"][(c_word, c_tag)])
-    #TODO: check if this does what its supposed to
 
     # f_hyfen: fires if the word contains a hyphen and current tag is T
     if "-" in c_word:
