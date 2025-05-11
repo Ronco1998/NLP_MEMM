@@ -87,8 +87,6 @@ def perform_k_fold_cross_validation(k, train2_path, weights2_path, threshold, la
 
     with open(weights2_path, 'wb+') as f:
         pickle.dump((best_optimal_params, best_feature2id), f)
-
-    # fix how we load weights and feature2id to the weights2_path (which is a pickle)
     
     # Clean up temporary files
     for fold_idx in range(num_folds):
@@ -105,12 +103,10 @@ def perform_k_fold_cross_validation(k, train2_path, weights2_path, threshold, la
         if os.path.exists(test_fold_path):
             os.remove(test_fold_path)
 
-    
-    # return weights2_path
 
 def main():
     # threshold = 8  # or higher, experiment to get under 10,000 features
-    threshold_m1 = {"f100": 7, "f101": 7, "f102": 7, "f103": 6, "f104": 8, "f105": 8, "f106": 20, "f107": 20,
+    threshold_m1 = {"f100": 7, "f101": 7, "f102": 7, "f103": 7, "f104": 9, "f105": 9, "f106": 20, "f107": 20,
                     "f_number": 3, "f_Capital": 2, "f_plural": 3, "f_bio_pre_suf": np.inf, "f_hyfen": 4,
                     "f_econ_terms": 1, "f_bio_terms": np.inf, "f_CapCap": 2, "f_CapCapCap": 2, "f_allCap": 3,
                     "f_dot": 2}
@@ -165,52 +161,6 @@ def main():
     predictions1_on_train_path = 'predictions1_on_train.wtag'
     tag_all_test(test_train_1_path, pre_trained_weights_1, feature2id1, predictions1_on_train_path)
     
-    # compute and print accuracies
-
-    # --------------------------------------------------------------------------------------------
-    if 'test1.wtag' in test_path:
-        acc_test1, _ = compare_files(test_path, predictions1_path)
-        print(f'Model 1 - test accuracy')
-        print(f"Token-level accuracy on test set: {acc_test1*100:.2f}%")
-
-    if 'test1.wtag' in test_train_1_path:
-        acc_train1, _ = compare_files(test_train_1_path, predictions1_on_train_path)
-        print(f'Model 1 - train accuracy')
-        print(f"Token-level accuracy on train set: {acc_train1*100:.2f}%")
-
-    if 'test2.wtag' in test_on_train_path:
-        acc_train2, _ = compare_files(test_on_train_path, predictions2_on_train_path)
-        print(f'Model 2 - train accuracy')
-        print(f"Token-level accuracy on train set: {acc_train2*100:.2f}%")
-    # --------------------------------------------------------------------------------------------
-
-    # confusion matrix for model 1
-    # Generate and print confusion matrix
-    true_labels = []
-    predicted_labels = []
-    with open(test_path, 'r') as f_true, open(predictions1_path, 'r') as f_pred:
-        for true_line, pred_line in zip(f_true, f_pred):
-            true_labels.extend([pair.split('_')[1] for pair in true_line.strip().split()])
-            predicted_labels.extend([pair.split('_')[1] for pair in pred_line.strip().split()])
-
-    labels = sorted(list(set(true_labels)))
-    cm = confusion_matrix(true_labels, predicted_labels, labels=labels)
-    # export cm as csv file
-    np.savetxt('confusion_matrix_model1.csv', cm, delimiter=',', fmt='%d', header=','.join(labels), comments='')
-
-    # Plot and save the confusion matrix as an image
-    import matplotlib.pyplot as plt
-    import seaborn as sns
-    plt.figure(figsize=(12, 10))
-    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=labels, yticklabels=labels)
-    plt.xlabel('Predicted')
-    plt.ylabel('True')
-    plt.title('Confusion Matrix - Model 1')
-    plt.tight_layout()
-    plt.savefig('confusion_matrix_model1.png')
-    plt.close()
-    print('Confusion matrix saved as confusion_matrix_model1.png')
-
     # competition part - creating the tagged files for submission!
     # comp1
     comp1_path = "data/comp1.words" # for competition purposes
@@ -223,6 +173,28 @@ def main():
     predictions_path_comp2 = 'comp_m2_341241297_206134867.wtag'
     tagged_comp2_path = 'data/comp2_tagged.wtag'
     tag_all_test(comp2_path, pre_trained_weights_2, feature2id2, predictions_path_comp2)
+
+    # --------------------------------------------------------------------------------------------
+
+    print(f'Number of features for model 1: {feature2id1.n_total_features}')
+    
+    if 'test1.wtag' in test_path:
+        acc_test1, _ = compare_files(test_path, predictions1_path)
+        print(f'Model 1 - test accuracy')
+        print(f"Token-level accuracy on test set: {acc_test1*100:.2f}%")
+
+    if 'test1.wtag' in test_train_1_path:
+        acc_train1, _ = compare_files(test_train_1_path, predictions1_on_train_path)
+        print(f'Model 1 - train accuracy')
+        print(f"Token-level accuracy on train set: {acc_train1*100:.2f}%")
+
+    print(f'Number of features for model 2: {feature2id2.n_total_features}')
+
+    if 'test2.wtag' in test_on_train_path:
+        acc_train2, _ = compare_files(test_on_train_path, predictions2_on_train_path)
+        print(f'Model 2 - train accuracy')
+        print(f"Token-level accuracy on train set: {acc_train2*100:.2f}%")
+    # --------------------------------------------------------------------------------------------
     
     acc_comp1, _ = compare_files(tagged_comp1_path, predictions_path_comp1)
     print(f'Comp 1 -  accuracy')

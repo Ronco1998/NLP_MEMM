@@ -68,6 +68,26 @@ print(f"{'Label':<10} {'FalsePred':<10} {'TrueCount':<10} {'False/True Ratio':<1
 for label, fp, tc, ratio in label_stats_sorted:
     print(f"{label:<10} {fp:<10} {tc:<10} {ratio:<15.2f}")
 
+# Analyze top mislabelings for Comp 1
+N = 5  # Top N mislabelings to show
+mislabel_stats = []
+for i, true_label in enumerate(labels):
+    row = cm[i]
+    row_no_diag = row.copy()
+    row_no_diag[i] = 0  # Zero out the diagonal
+    if row_no_diag.sum() > 0:
+        max_mislabel_idx = np.argmax(row_no_diag)
+        max_mislabel_count = row_no_diag[max_mislabel_idx]
+        pred_label = labels[max_mislabel_idx]
+        percent = max_mislabel_count / true_counts[i] * 100 if true_counts[i] > 0 else 0
+        mislabel_stats.append((true_label, pred_label, max_mislabel_count, percent))
+
+mislabel_stats_sorted = sorted(mislabel_stats, key=lambda x: (-x[2], -x[3]))
+print(f"\nTop {N} most frequent mislabelings for Comp 1:")
+print(f"{'TrueLabel':<12} {'PredAs':<12} {'Count':<8} {'Percent':<10}")
+for true_label, pred_label, count, percent in mislabel_stats_sorted[:N]:
+    print(f"{true_label:<12} {pred_label:<12} {count:<8} {percent:<10.2f}")
+
 # Ensure alignment by removing mismatched lines from both files
 aligned_true_lines = []
 aligned_pred_lines = []
@@ -126,3 +146,23 @@ print('\nLabel error analysis for Comp 2:')
 print(f"{'Label':<10} {'FalsePred':<10} {'TrueCount':<10} {'False/True Ratio':<15}")
 for label, fp, tc, ratio in label_stats_sorted:
     print(f"{label:<10} {fp:<10} {tc:<10} {ratio:<15.2f}")
+
+# Analyze top mislabelings for Comp 2
+N = 5
+mislabel_stats = []
+for i, true_label in enumerate(labels):
+    row = cm[i]
+    row_no_diag = row.copy()
+    row_no_diag[i] = 0
+    if row_no_diag.sum() > 0:
+        max_mislabel_idx = np.argmax(row_no_diag)
+        max_mislabel_count = row_no_diag[max_mislabel_idx]
+        pred_label = labels[max_mislabel_idx]
+        percent = max_mislabel_count / true_counts[i] * 100 if true_counts[i] > 0 else 0
+        mislabel_stats.append((true_label, pred_label, max_mislabel_count, percent))
+
+mislabel_stats_sorted = sorted(mislabel_stats, key=lambda x: (-x[2], -x[3]))
+print(f"\nTop {N} most frequent mislabelings for Comp 2:")
+print(f"{'TrueLabel':<12} {'PredAs':<12} {'Count':<8} {'Percent':<10}")
+for true_label, pred_label, count, percent in mislabel_stats_sorted[:N]:
+    print(f"{true_label:<12} {pred_label:<12} {count:<8} {percent:<10.2f}")

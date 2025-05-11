@@ -38,7 +38,7 @@ class FeatureStatistics:
         feature_dict_list = ["f100", "f101", "f102", "f103", "f104", "f105", "f106", "f107",
                              "f_number", "f_Capital", "f_plural", "f_bio_pre_suf",
                              "f_hyfen", "f_econ_terms", "f_bio_terms", "f_CapCap", "f_CapCapCap",
-                             "f_allCap", "f_dot", "f_punctuation"] 
+                             "f_allCap", "f_dot"] 
 
         #TODO: add feature about foreign words somehow
 
@@ -90,7 +90,6 @@ class FeatureStatistics:
         return True  # f100 applies to all word-tag pairs
 
     # if the word is part of a known structure - suffixes
-    # NOUN_SUFFIXES = ('tion','ment','ness','ity','age','ship','ism','ence','ance')
     def check_feature_f101(self, cur_word, cur_tag):
         known_suffixes = {
             'ing': 'VBG',
@@ -109,7 +108,7 @@ class FeatureStatistics:
             'ity': 'NN',
             'ty': 'NN',
             'al': 'JJ', 'ful': 'JJ', 'ive': 'JJ', 'ous': 'JJ', 'ish': 'JJ', 'less': 'JJ',
-            'tion': 'NN', 'sion': 'NN', 'tion': 'NN', 'ation': 'NN', 'age': 'NN', 'ship': 'NN',
+            'tion': 'NN', 'sion': 'NN', 'ation': 'NN', 'age': 'NN', 'ship': 'NN',
             'ism': 'NN', 'ence': 'NN', 'ance': 'NN'
         }
         for suffix, tag in known_suffixes.items():
@@ -176,20 +175,20 @@ class FeatureStatistics:
 
     # the current word is a capitalized word and the previous word is also capitalized
     def check_feature_f_CapCap(self, word_idx, split_words, cur_tag):
-        return word_idx >= 1 and split_words[word_idx - 1][0].isupper() and split_words[word_idx][0].isupper() # and cur_tag in {"NNP", "NNPS"}
+        return word_idx >= 1 and split_words[word_idx - 1][0].isupper() and split_words[word_idx][0].isupper() and cur_tag in {"NNP", "NNPS"}
     
     # the current word is a capitalized word and the previous two words are also capitalized
     def check_feature_f_CapCapCap(self, word_idx, split_words, cur_tag):
-        return word_idx >= 2 and split_words[word_idx - 1][0].isupper() and split_words[word_idx - 2][0].isupper() and split_words[word_idx][0].isupper() # and cur_tag in {"NNP", "NNPS"}
+        return word_idx >= 2 and split_words[word_idx - 1][0].isupper() and split_words[word_idx - 2][0].isupper() and split_words[word_idx][0].isupper() and cur_tag in {"NNP", "NNPS"}
 
     # the current word has a hyphen (compost words moslty) and is a noun or adjective
     def check_feature_f_hyfen(self, cur_word, cur_tag):
-        return ("-" in cur_word) # and cur_tag in {"NN", "NNP", "JJ", "NNS"}
+        return ("-" in cur_word) and cur_tag in {"NN", "NNP", "JJ", "NNS"}
     
     # the current word finishes with an 's', and is a noun or proper noun (plura!)
     def check_feature_f_plural(self, cur_word, cur_tag):
         # Fires if the word is likely plural (simple heuristic)
-        return cur_word.lower().endswith('s') and cur_tag in {"NNPS"} #trial
+        return cur_word.lower().endswith('s') # and cur_tag in {"NNPS"} #trial
     
     # in last trial: didnt take into account the tag of the current word (plural, capitals and hyfen)
 
@@ -223,8 +222,8 @@ class FeatureStatistics:
         # Check if the word ends with a period
         return cur_word.endswith('.') and cur_tag in {"NNP", "NNPS", "FW"}
     
-    def check_feature_f_punctuation(self, cur_word, cur_tag):
-        return cur_word in string.punctuation and cur_tag in {"NNP", "NNPS", "FW"}
+    
+
 
     def check_all_features(self, feature_rep_dict, cur_word, cur_tag, word_idx, split_words):
 
@@ -266,9 +265,6 @@ class FeatureStatistics:
             feature_rep_dict["f_allCap"][(cur_word, cur_tag)] = feature_rep_dict["f_allCap"].get((cur_word, cur_tag), 0) + 1
         if self.check_feature_f_dot(cur_word, cur_tag):
             feature_rep_dict["f_dot"][(cur_word, cur_tag)] = feature_rep_dict["f_dot"].get((cur_word, cur_tag), 0) + 1
-        if self.check_feature_f_punctuation(cur_word, cur_tag):
-            feature_rep_dict["f_punctuation"][(cur_word, cur_tag)] = feature_rep_dict["f_punctuation"].get((cur_word, cur_tag), 0) + 1
-
 
 class Feature2id:
     def __init__(self, feature_statistics: FeatureStatistics, threshold: int):
@@ -303,8 +299,7 @@ class Feature2id:
             "f_CapCap": OrderedDict(),
             "f_CapCapCap": OrderedDict(),
             "f_allCap": OrderedDict(),
-            "f_dot": OrderedDict(), 
-            "f_punctuation": OrderedDict()
+            "f_dot": OrderedDict()
         }
         self.represent_input_with_features = OrderedDict()
         self.histories_matrix = OrderedDict()
@@ -464,9 +459,6 @@ def represent_input_with_features(history: Tuple, dict_of_dicts: Dict[str, Dict[
 
     if (c_word, c_tag) in dict_of_dicts.get("f_dot", {}):
         features.append(dict_of_dicts["f_dot"][(c_word, c_tag)])
-
-    if (c_word, c_tag) in dict_of_dicts.get("f_punctuation", {}):
-        features.append(dict_of_dicts["f_punctuation"][(c_word, c_tag)])
 
     return features
 
