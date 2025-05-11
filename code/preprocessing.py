@@ -2,7 +2,7 @@ from scipy import sparse
 from collections import OrderedDict, defaultdict
 import numpy as np
 from typing import List, Dict, Tuple
-
+import string
 
 WORD = 0
 TAG = 1
@@ -36,7 +36,7 @@ class FeatureStatistics:
 
         # Init all features dictionaries
         feature_dict_list = ["f100", "f101", "f102", "f103", "f104", "f105", "f106", "f107",
-                             "f_number", "f_Capital", "f_apostrophe", "f_plural", "f_bio_pre_suf",
+                             "f_number", "f_Capital", "f_plural", "f_bio_pre_suf",
                              "f_hyfen", "f_econ_terms", "f_bio_terms", "f_CapCap", "f_CapCapCap",
                              "f_allCap", "f_dot", "f_punctuation"] 
 
@@ -171,10 +171,6 @@ class FeatureStatistics:
     def check_feature_f_CapCapCap(self, word_idx, split_words, cur_tag):
         return word_idx >= 2 and split_words[word_idx - 1][0].isupper() and split_words[word_idx - 2][0].isupper() and split_words[word_idx][0].isupper() and cur_tag in {"NNP", "NNPS"}
 
-    # the current word has an apostrophe
-    def check_feature_f_apostrophe(self, cur_word, cur_tag):
-        return "'" in cur_word
-    
     # the current word has a hyphen (compost words moslty) and is a noun or adjective
     def check_feature_f_hyfen(self, cur_word, cur_tag):
         return ("-" in cur_word) and cur_tag in {"NN", "NNP", "JJ", "NNS"}
@@ -182,7 +178,7 @@ class FeatureStatistics:
     # the current word finishes with an 's', and is a noun or proper noun (plura!)
     def check_feature_f_plural(self, cur_word, cur_tag):
         # Fires if the word is likely plural (simple heuristic)
-        return cur_word.lower().endswith('s') # and cur_tag in {"NNS", "NNPS"}
+        return cur_word.lower().endswith('s') and cur_tag in {"NNS", "NNPS"}
     
     # the current word has a prefix or suffix that is known in biology and is a noun
     def check_feature_f_bio(self, cur_word, cur_tag):
@@ -215,7 +211,7 @@ class FeatureStatistics:
         return cur_word.endswith('.') and cur_tag in {"NNP", "NNPS", "FW"}
     
     def check_feature_f_punctuation(self, cur_word, cur_tag):
-        return cur_word in {".", ",", "!", "?", ";", ":", "-", "--", "..."} # and cur_tag in {"NNP", "NNPS", "FW"}
+        return cur_word in string.punctuation and cur_tag in {"NNP", "NNPS", "FW"}
 
     def check_all_features(self, feature_rep_dict, cur_word, cur_tag, word_idx, split_words):
 
@@ -239,8 +235,6 @@ class FeatureStatistics:
             feature_rep_dict["f_number"][(cur_word, cur_tag)] = feature_rep_dict["f_number"].get((cur_word, cur_tag), 0) + 1
         if self.check_feature_f_Capital(cur_word, cur_tag):
             feature_rep_dict["f_Capital"][(cur_word, cur_tag)] = feature_rep_dict["f_Capital"].get((cur_word, cur_tag), 0) + 1
-        if self.check_feature_f_apostrophe(cur_word, cur_tag):
-            feature_rep_dict["f_apostrophe"][(cur_word, cur_tag)] = feature_rep_dict["f_apostrophe"].get((cur_word, cur_tag), 0) + 1
         if self.check_feature_f_plural(cur_word, cur_tag):
             feature_rep_dict["f_plural"][(cur_word, cur_tag)] = feature_rep_dict["f_plural"].get((cur_word, cur_tag), 0) + 1
         if self.check_feature_f_bio(cur_word, cur_tag):
@@ -288,7 +282,6 @@ class Feature2id:
             "f107": OrderedDict(),
             "f_number": OrderedDict(),
             "f_Capital": OrderedDict(),
-            # "f_apostrophe": OrderedDict(),
             "f_plural": OrderedDict(),
             "f_bio_pre_suf": OrderedDict(),
             "f_hyfen": OrderedDict(), 
@@ -432,11 +425,6 @@ def represent_input_with_features(history: Tuple, dict_of_dicts: Dict[str, Dict[
     if any(char.isdigit() for char in c_word) or c_word.lower() in NUMBER_WORDS:
         if (c_word, c_tag) in dict_of_dicts.get("f_number", {}):
             features.append(dict_of_dicts["f_number"][(c_word, c_tag)])
-
-    # f_apostrophe: fires if the word contains an apostrophe and current tag is T
-    if "'" in c_word:
-        if (c_word, c_tag) in dict_of_dicts.get("f_apostrophe", {}):
-            features.append(dict_of_dicts["f_apostrophe"][(c_word, c_tag)])
 
     # f_plural: fires if the word is likely plural and current tag is NNS or NNPS
     if (c_word, c_tag) in dict_of_dicts.get("f_plural", {}):
