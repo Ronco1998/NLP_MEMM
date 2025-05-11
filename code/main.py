@@ -39,8 +39,8 @@ def perform_k_fold_cross_validation(k, train2_path, weights2_path, threshold, la
         folds[-1].extend(shuffled_data[num_folds * fold_size:])
 
     accuracies = []
-    features2id = []
-    fold_weights = []
+    fold_opt_params = []
+    fold_feature2id = []
 
     for fold_idx in range(num_folds):
         # Create train and test sets for this fold
@@ -57,14 +57,16 @@ def perform_k_fold_cross_validation(k, train2_path, weights2_path, threshold, la
 
         # Preprocess and train on this fold using the global feature2id
         statistics, feature2id_fold = preprocess_train(train_fold_path, threshold)
-        features2id.append(feature2id_fold)
         weights_path = f"weights_fold{fold_idx + 1}.pkl"
         get_optimal_vector(statistics=statistics, feature2id=feature2id_fold, weights_path=weights_path, lam=lam)
 
         # Load the weights for this fold
         with open(weights_path, 'rb') as f:
-            optimal_params, _ = pickle.load(f)
+            optimal_params, feature2id_fold = pickle.load(f)
         pre_trained_weights = optimal_params[0]
+
+        fold_opt_params.append(optimal_params)
+        fold_feature2id.append(feature2id_fold)
 
         prediction_fold_path = f'predictions_fold{fold_idx + 1}.wtag'
         tag_all_test(test_fold_path, pre_trained_weights, feature2id_fold, prediction_fold_path)
@@ -76,40 +78,46 @@ def perform_k_fold_cross_validation(k, train2_path, weights2_path, threshold, la
             print(f'Model 2 - test accuracy in fold {fold_idx + 1}:')
             print(f"Token-level accuracy on test set: {acc * 100:.2f}%")
 
-        fold_weights.append(optimal_params[0])  # Collect weights
-
-
-
     print(f'Fold accuracies: {accuracies}')
 
     # Get the index of the best fold
     best_fold_idx = np.argmax(accuracies)
-    best_feature2id = features2id[best_fold_idx]
-    # Save the averaged weights to the final weights file using the global feature2id
-    with open(weights2_path, 'wb') as f:
-        pickle.dump(fold_weights[best_fold_idx], f)
+    best_optimal_params = fold_opt_params[best_fold_idx]
+    best_feature2id = fold_feature2id[best_fold_idx]
+
+    with open(weights2_path, 'wb+') as f:
+        pickle.dump((best_optimal_params, best_feature2id), f)
+
+    # fix how we load weights and feature2id to the weights2_path (which is a pickle)
     
     # Clean up temporary files
     for fold_idx in range(num_folds):
         train_fold_path = f"data/train2_fold{fold_idx + 1}.wtag"
         test_fold_path = f"data/test2_fold{fold_idx + 1}.wtag"
+        prediction_fold_path = f'predictions_fold{fold_idx + 1}.wtag'
+        weight_fold_path = f"weights_fold{fold_idx + 1}.pkl"
+        if os.path.exists(weight_fold_path):
+            os.remove(weight_fold_path)
+        if os.path.exists(prediction_fold_path):
+            os.remove(prediction_fold_path)
         if os.path.exists(train_fold_path):
             os.remove(train_fold_path)
         if os.path.exists(test_fold_path):
             os.remove(test_fold_path)
+
     
-    return weights2_path, best_feature2id
+    # return weights2_path
 
 def main():
     # threshold = 8  # or higher, experiment to get under 10,000 features
     threshold_m1 = {"f100": 7, "f101": 7, "f102": 7, "f103": 6, "f104": 8, "f105": 8, "f106": 20, "f107": 20,
-                    "f_number": 3, "f_Capital": 3, "f_plural": 3, "f_bio_pre_suf": np.inf, "f_hyfen": 4,
+                    "f_number": 3, "f_Capital": 2, "f_plural": 3, "f_bio_pre_suf": np.inf, "f_hyfen": 4,
                     "f_econ_terms": 1, "f_bio_terms": np.inf, "f_CapCap": 2, "f_CapCapCap": 2, "f_allCap": 3,
-                    "f_dot": 2, "f_punctuation": 2}
-    threshold_m2 = {"f100": 2, "f101": 3, "f102": 3, "f103": 4, "f104": 4, "f105": 4, "f106": 4, "f107": 4,
-                    "f_number": 4, "f_Capital": 2, "f_plural": 4, "f_bio_pre_suf": 1, "f_hyfen": 3,
-                    "f_econ_terms": np.inf, "f_bio_terms": 1, "f_CapCap": 2, "f_CapCapCap": 2, "f_allCap": 2,
-                    "f_dot": 2, "f_punctuation": 2}
+                    "f_dot": 2}
+    threshold_m2 = {"f100": 2, "f101": 2, "f102": 3, "f103": 3, "f104": 3, "f105": 4, "f106": 4, "f107": 4,
+                    "f_number": 4, "f_Capital": 2, "f_plural": 4, "f_bio_pre_suf": 1, "f_hyfen": 2,
+                    "f_econ_terms": np.inf, "f_bio_terms": 1, "f_CapCap": 2, "f_CapCapCap": 2, "f_allCap": 1,
+                    "f_dot": 2}
 
     lam1 = 0.1
     lam2 = 0.001
@@ -132,7 +140,6 @@ def main():
     print(pre_trained_weights_1)
     tag_all_test(test_path, pre_trained_weights_1, feature2id1, predictions1_path)
 
-    #TODO: print confusion matrix of model 1
 
     # model 2 -> 5-fold cross-validation of train2.wtag to find a good model
     train2_path = "data/train2.wtag"
@@ -142,7 +149,7 @@ def main():
 
     weights2_path = 'weights2.pkl'
     k = 5 # how many folds to use for cross-validation
-    _, feature2id2 = perform_k_fold_cross_validation(k, train2_path, weights2_path, threshold_m2, lam2)
+    perform_k_fold_cross_validation(k, train2_path, weights2_path, threshold_m2, lam2)
 
     # After cross-validation, use the averaged weights for tagging
     predictions2_on_train_path = 'predictions2_on_train.wtag'
@@ -188,6 +195,8 @@ def main():
 
     labels = sorted(list(set(true_labels)))
     cm = confusion_matrix(true_labels, predicted_labels, labels=labels)
+    # export cm as csv file
+    np.savetxt('confusion_matrix_model1.csv', cm, delimiter=',', fmt='%d', header=','.join(labels), comments='')
 
     # Plot and save the confusion matrix as an image
     import matplotlib.pyplot as plt
@@ -206,13 +215,23 @@ def main():
     # comp1
     comp1_path = "data/comp1.words" # for competition purposes
     predictions_path_comp1 = 'comp_m1_341241297_206134867.wtag'
+    tagged_comp1_path = 'data/comp1_tagged.wtag'
     tag_all_test(comp1_path, pre_trained_weights_1, feature2id1, predictions_path_comp1)
 
     # comp2
     comp2_path = "data/comp2.words" # for competition purposes
     predictions_path_comp2 = 'comp_m2_341241297_206134867.wtag'
+    tagged_comp2_path = 'data/comp2_tagged.wtag'
     tag_all_test(comp2_path, pre_trained_weights_2, feature2id2, predictions_path_comp2)
     
+    acc_comp1, _ = compare_files(tagged_comp1_path, predictions_path_comp1)
+    print(f'Comp 1 -  accuracy')
+    print(f"Token-level accuracy on tagged comp set: {acc_comp1*100:.2f}%")
+
+    acc_comp2, _ = compare_files(tagged_comp2_path, predictions_path_comp2)
+    print(f'Comp 2 - accuracy')
+    print(f"Token-level accuracy on tagged comp set: {acc_comp2*100:.2f}%")
+
 
 if __name__ == '__main__':
     main()

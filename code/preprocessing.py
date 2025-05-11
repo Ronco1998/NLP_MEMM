@@ -90,6 +90,7 @@ class FeatureStatistics:
         return True  # f100 applies to all word-tag pairs
 
     # if the word is part of a known structure - suffixes
+    # NOUN_SUFFIXES = ('tion','ment','ness','ity','age','ship','ism','ence','ance')
     def check_feature_f101(self, cur_word, cur_tag):
         known_suffixes = {
             'ing': 'VBG',
@@ -102,10 +103,18 @@ class FeatureStatistics:
             'able': 'JJ',
             'ible': 'JJ', 
             'ic': 'JJ', 
-            'ical': 'JJ'
+            'ical': 'JJ', 
+            'ment': 'NN',
+            'ness': 'NN',
+            'ity': 'NN',
+            'ty': 'NN',
+            'al': 'JJ', 'ful': 'JJ', 'ive': 'JJ', 'ous': 'JJ', 'ish': 'JJ', 'less': 'JJ',
+            'tion': 'NN', 'sion': 'NN', 'tion': 'NN', 'ation': 'NN', 'age': 'NN', 'ship': 'NN',
+            'ism': 'NN', 'ence': 'NN', 'ance': 'NN'
         }
         for suffix, tag in known_suffixes.items():
-            if cur_word.endswith(suffix) and cur_tag == tag:
+            lw = cur_word.lower()
+            if lw.endswith(suffix) and cur_tag == tag:
                 return True
         return False
 
@@ -122,7 +131,8 @@ class FeatureStatistics:
             'mis': 'VB'
         }
         for prefix, tag in known_prefixes.items():
-            if cur_word.startswith(prefix) and cur_tag == tag:
+            lw = cur_word.lower()
+            if lw.startswith(prefix) and cur_tag == tag:
                 return True
         return False
 
@@ -155,31 +165,34 @@ class FeatureStatistics:
         return any(char.isdigit() for char in cur_word) or cur_word.lower() in NUMBER_WORDS
 
     # the current word starts with a capital letter and is a proper noun
-    # TODO: do we need the proper noun?
+
     def check_feature_f_Capital(self, cur_word, cur_tag):
         # Fires if the word starts with a capital letter
         return cur_word[0].isupper() and cur_tag in {"NNP", "NNPS"}
     
     #TODO: shound the current word also start with a capital letter?
+    # try once without it
     # and should it be curr_tag in {"NNP", "NNPS"}?
 
     # the current word is a capitalized word and the previous word is also capitalized
     def check_feature_f_CapCap(self, word_idx, split_words, cur_tag):
-        return word_idx >= 1 and split_words[word_idx - 1][0].isupper() and split_words[word_idx][0].isupper() and cur_tag in {"NNP", "NNPS"}
+        return word_idx >= 1 and split_words[word_idx - 1][0].isupper() and split_words[word_idx][0].isupper() # and cur_tag in {"NNP", "NNPS"}
     
     # the current word is a capitalized word and the previous two words are also capitalized
     def check_feature_f_CapCapCap(self, word_idx, split_words, cur_tag):
-        return word_idx >= 2 and split_words[word_idx - 1][0].isupper() and split_words[word_idx - 2][0].isupper() and split_words[word_idx][0].isupper() and cur_tag in {"NNP", "NNPS"}
+        return word_idx >= 2 and split_words[word_idx - 1][0].isupper() and split_words[word_idx - 2][0].isupper() and split_words[word_idx][0].isupper() # and cur_tag in {"NNP", "NNPS"}
 
     # the current word has a hyphen (compost words moslty) and is a noun or adjective
     def check_feature_f_hyfen(self, cur_word, cur_tag):
-        return ("-" in cur_word) and cur_tag in {"NN", "NNP", "JJ", "NNS"}
+        return ("-" in cur_word) # and cur_tag in {"NN", "NNP", "JJ", "NNS"}
     
     # the current word finishes with an 's', and is a noun or proper noun (plura!)
     def check_feature_f_plural(self, cur_word, cur_tag):
         # Fires if the word is likely plural (simple heuristic)
-        return cur_word.lower().endswith('s') and cur_tag in {"NNS", "NNPS"}
+        return cur_word.lower().endswith('s') and cur_tag in {"NNPS"} #trial
     
+    # in last trial: didnt take into account the tag of the current word (plural, capitals and hyfen)
+
     # the current word has a prefix or suffix that is known in biology and is a noun
     def check_feature_f_bio(self, cur_word, cur_tag):
         # Check if the word starts with a known prefix or ends with a known suffix
