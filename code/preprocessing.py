@@ -38,7 +38,7 @@ class FeatureStatistics:
         feature_dict_list = ["f100", "f101", "f102", "f103", "f104", "f105", "f106", "f107",
                              "f_number", "f_Capital", "f_apostrophe", "f_plural", "f_bio_pre_suf",
                              "f_hyfen", "f_econ_terms", "f_bio_terms", "f_CapCap", "f_CapCapCap",
-                             "f_allCap", "f_dot"] 
+                             "f_allCap", "f_dot", "f_punctuation"] 
 
         #TODO: add feature about foreign words somehow
 
@@ -213,6 +213,9 @@ class FeatureStatistics:
     def check_feature_f_dot(self, cur_word, cur_tag):
         # Check if the word ends with a period
         return cur_word.endswith('.') and cur_tag in {"NNP", "NNPS", "FW"}
+    
+    def check_feature_f_punctuation(self, cur_word, cur_tag):
+        return cur_word in {".", ",", "!", "?", ";", ":", "-", "--", "..."} # and cur_tag in {"NNP", "NNPS", "FW"}
 
     def check_all_features(self, feature_rep_dict, cur_word, cur_tag, word_idx, split_words):
 
@@ -256,6 +259,8 @@ class FeatureStatistics:
             feature_rep_dict["f_allCap"][(cur_word, cur_tag)] = feature_rep_dict["f_allCap"].get((cur_word, cur_tag), 0) + 1
         if self.check_feature_f_dot(cur_word, cur_tag):
             feature_rep_dict["f_dot"][(cur_word, cur_tag)] = feature_rep_dict["f_dot"].get((cur_word, cur_tag), 0) + 1
+        if self.check_feature_f_punctuation(cur_word, cur_tag):
+            feature_rep_dict["f_punctuation"][(cur_word, cur_tag)] = feature_rep_dict["f_punctuation"].get((cur_word, cur_tag), 0) + 1
 
 
 class Feature2id:
@@ -292,7 +297,8 @@ class Feature2id:
             "f_CapCap": OrderedDict(),
             "f_CapCapCap": OrderedDict(),
             "f_allCap": OrderedDict(),
-            "f_dot": OrderedDict()
+            "f_dot": OrderedDict(), 
+            "f_punctuation": OrderedDict()
         }
         self.represent_input_with_features = OrderedDict()
         self.histories_matrix = OrderedDict()
@@ -457,6 +463,9 @@ def represent_input_with_features(history: Tuple, dict_of_dicts: Dict[str, Dict[
 
     if (c_word, c_tag) in dict_of_dicts.get("f_dot", {}):
         features.append(dict_of_dicts["f_dot"][(c_word, c_tag)])
+
+    if (c_word, c_tag) in dict_of_dicts.get("f_punctuation", {}):
+        features.append(dict_of_dicts["f_punctuation"][(c_word, c_tag)])
 
     return features
 

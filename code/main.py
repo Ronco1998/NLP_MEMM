@@ -76,14 +76,14 @@ def perform_5_fold_cross_validation(train2_path, weights2_path, threshold, lam):
 
 def main():
     # threshold = 8  # or higher, experiment to get under 10,000 features
-    threshold_m1 = {"f100": 7, "f101": 7, "f102": 7, "f103": 6, "f104": 8, "f105": 8, "f106": 20, "f107": 20,
+    threshold_m1 = {"f100": 7, "f101": 6, "f102": 6, "f103": 5, "f104": 7, "f105": 7, "f106": 20, "f107": 20,
                     "f_number": 3, "f_Capital": 3, "f_apostrophe": np.inf, "f_plural": 3, "f_bio_pre_suf": np.inf, "f_hyfen": 4,
                     "f_econ_terms": 1, "f_bio_terms": np.inf, "f_CapCap": 2, "f_CapCapCap": 2, "f_allCap": 3,
-                    "f_dot": 2}
-    threshold_m2 = {"f100": 2, "f101": 3, "f102": 3, "f103": 4, "f104": 4, "f105": 4, "f106": 4, "f107": 4,
-                    "f_number": 4, "f_Capital": 2, "f_apostrophe": np.inf, "f_plural": 4, "f_bio_pre_suf": 1, "f_hyfen": 3,
+                    "f_dot": 2, "f_punctuation": 1}
+    threshold_m2 = {"f100": 2, "f101": 3, "f102": 3, "f103": 3, "f104": 3, "f105": 3, "f106": 4, "f107": 3,
+                    "f_number": 4, "f_Capital": 2, "f_apostrophe": np.inf, "f_plural": 3, "f_bio_pre_suf": 1, "f_hyfen": 3,
                     "f_econ_terms": np.inf, "f_bio_terms": 1, "f_CapCap": 2, "f_CapCapCap": 2, "f_allCap": 2,
-                    "f_dot": 2}
+                    "f_dot": 2, "f_punctuation": 1}
 
     lam1 = 0.1
     lam2 = 0.01
@@ -146,6 +146,11 @@ def main():
     # Use the best weights and feature2id for tagging
     tag_all_test(test_on_train_path, pre_trained_weights_2, feature2id2, predictions2_on_train_path)
 
+    predictions1_on_train_path = 'predictions1_on_train.wtag'
+    tag_all_test(test_train_1_path, pre_trained_weights_1, feature2id1, predictions1_on_train_path)
+    
+    # compute and print confusion matrix
+
     #------------------------------------------------------------
     # Compute and print accuracy if test_path is a labeled file
     if 'test1.wtag' in test_path:
@@ -154,8 +159,6 @@ def main():
         print(f"Token-level accuracy on test set: {acc_test1*100:.2f}%")
     #------------------------------------------------------------
 
-    predictions1_on_train_path = 'predictions1_on_train.wtag'
-    tag_all_test(test_train_1_path, pre_trained_weights_1, feature2id1, predictions1_on_train_path)
     #------------------------------------------------------------
     # Compute and print accuracy if train_path is a labeled file
     if 'test1.wtag' in test_train_1_path:
@@ -163,7 +166,6 @@ def main():
         print(f'Model 1 - train accuracy')
         print(f"Token-level accuracy on train set: {acc_train1*100:.2f}%")
     #------------------------------------------------------------
-    # compute and print confusion matrix
 
     # Compute and print accuracy for the train2.wtag dataset
     if 'test2.wtag' in test_on_train_path:
